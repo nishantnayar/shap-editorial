@@ -130,14 +130,21 @@ def beeswarm(
         charts both look tight); pass an explicit (w, h) to override.
     transparent : bool
         If True, render (and save) with a transparent background instead of
-        white — useful for coloured slides or dark web pages. Ignored when
-        drawing onto an existing `ax` you control.
+        white — useful for coloured slides or dark web pages. Save to a format
+        with an alpha channel (PNG, SVG, PDF); JPEG has no transparency and will
+        flatten the background. Ignored when drawing onto an existing `ax`.
     ax : matplotlib.axes.Axes | None
         Draw onto an existing axes instead of creating a new figure.
 
     Returns
     -------
     (fig, ax) : the created or given figure and axes.
+
+    Notes
+    -----
+    Returning `(fig, ax)` means you can save in any matplotlib format:
+    `fig.savefig("chart.png" | ".jpg" | ".svg" | ".pdf", dpi=200,
+    bbox_inches="tight")`. Use SVG/PDF for resolution-independent print output.
     """
     set_theme(transparent=transparent)
 

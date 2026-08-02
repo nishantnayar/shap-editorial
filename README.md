@@ -99,6 +99,16 @@ fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")
 `beeswarm()` returns the `(fig, ax)` pair, so you keep full matplotlib control
 for any further tweaks.
 
+> **Tips**
+> - **Any format.** Because you get the `fig` back, save wherever matplotlib
+>   can: `fig.savefig("chart.png" | ".jpg" | ".svg" | ".pdf", dpi=200,
+>   bbox_inches="tight")`. Use **SVG/PDF** for crisp, resolution-independent
+>   figures in print/decks; raster (`.png`/`.jpg`) for the web.
+> - **Transparent backgrounds** (both `beeswarm` and `waterfall`): pass
+>   `transparent=True` for slides or dark pages. Save to a format with an alpha
+>   channel — **PNG, SVG, or PDF** — since **JPEG has no transparency** and will
+>   flatten the background to a solid colour.
+
 ### Run the real end-to-end examples
 
 ```bash
@@ -115,7 +125,8 @@ breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
 
 | Object                | Description                                                                 |
 | --------------------- | --------------------------------------------------------------------------- |
-| `beeswarm(...)`       | Global feature-impact summary. Returns `(fig, ax)`.                         |
+| `beeswarm(...)`       | Global feature-impact summary across all samples. Returns `(fig, ax)`.      |
+| `waterfall(...)`      | Single-prediction explanation — how each feature moves the output from the average prediction to this one. Returns `(fig, ax)`. |
 | `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally (called automatically by chart functions). Pass `transparent=True` for a no-background theme. |
 | `ShapEditorialError`  | Raised when the input isn't a usable SHAP explanation. Subclass of `ValueError`. |
 
@@ -172,6 +183,57 @@ beeswarm(
   fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")  # transparent
   ```
 - **`ax`** — draw onto an existing axes instead of creating a new figure.
+
+### `waterfall` — explain one prediction
+
+Where `beeswarm` summarises the whole dataset, `waterfall` explains a **single
+prediction**: red bars push the output up, grey bars push it down, and they sum
+(with the baseline) from the average prediction to this one — the endpoints are
+labelled in plain language, not `E[f(x)]`/`f(x)`.
+
+```python
+expl = explainer(X)  # a shap.Explanation
+fig, ax = se.waterfall(
+    expl[..., 0][0],  # class 0, instance 0 → 1-D values + base value
+    title="Why this case was predicted malignant",
+)
+```
+
+```python
+waterfall(
+    shap_values,
+    *,
+    max_display: int = 10,
+    title: str | None = None,
+    subtitle: str | None = None,
+    source: str | None = None,
+    feature_names=None,
+    figsize=None,
+    show_other: bool = True,
+    analysis: bool | str = True,
+    highlight: bool = True,
+    show_values: bool = False,
+    transparent: bool = False,
+    ax=None,
+)
+```
+
+- **`shap_values`** — a **single-instance** explanation (e.g. `explainer(X)[0]`)
+  exposing `.values` (1-D), `.base_values` (the average prediction), and ideally
+  `.data`. Multiclass, multi-sample, or missing-`base_values` inputs raise
+  `ShapEditorialError` — it never guesses.
+- **`max_display`** — top features shown individually.
+- **`show_other`** — collapse the rest into a single "N other features" bar so
+  the bars reconcile from the average prediction to this one. Defaults to `True`
+  here (unlike `beeswarm`'s `False`), because that reconciliation *is* the
+  waterfall — set `False` to show only the top features (the bars then stop
+  short of "This prediction", the gap being the hidden contributions).
+- **`show_values`** — append this instance's feature value to each label
+  (`name = value`). Off by default (a raw, unitless value next to the
+  contribution tends to confuse).
+- **`analysis` / `highlight` / `transparent` / `title` / `subtitle` / `source`** —
+  behave as in `beeswarm`. The auto takeaway names the largest contribution and
+  its direction for this instance.
 
 ## Interpreting direction (read this)
 
@@ -252,7 +314,7 @@ uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it c
 
 - [x] `beeswarm()` — global feature-impact summary
 - [x] Packaging, CI, LICENSE
-- [ ] `waterfall()` — single-prediction explanation
+- [x] `waterfall()` — single-prediction explanation
 - [ ] `bar()` — global feature-importance bar chart
 - [ ] First PyPI release (`v0.1`)
 

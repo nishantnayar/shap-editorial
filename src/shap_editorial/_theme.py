@@ -8,7 +8,7 @@ not something you'd screenshot apologetically.
 Signature Economist cues implemented here and in `_finalize.py`:
 - the small red brand tab in the top-left corner,
 - a bold, left-aligned title with a muted subtitle beneath it,
-- the Economist blue/red palette,
+- a grey→red palette (no blue), so charts read as one system,
 - a bottom-left source line.
 """
 
@@ -17,8 +17,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 
 # -- Palette -----------------------------------------------------------
-# The Economist's house colours. The low->high feature-value scale runs
-# from Economist blue through a light neutral to Economist red.
+# House colours built on the brand red. The low->high feature-value scale runs
+# from neutral grey up to Economist red (no blue) — see C_LOW/C_MID/C_HIGH.
 C_ECON_RED = "#E3120B"  # the brand red — also the high end of the scale
 # Grey -> red sequential feature-value scale: "redder = higher value". Low
 # values stay neutral grey and recede; high values pop in Economist red. This
@@ -38,6 +38,13 @@ C_SOURCE = "#8A8A8A"
 C_HIGHLIGHT = "#FBEBE8"  # faint warm tint behind the highlighted top-driver row
 C_BG = "#FFFFFF"
 C_OTHER_BAR = "#AEB6BB"  # colour for the collapsed "N other features" row
+
+# Sign colours for the waterfall chart, kept on the same grey→red system as the
+# beeswarm (no blue): red = raises the prediction (the "notable" direction),
+# neutral grey = lowers it (recedes). Direction is also carried by which side
+# the bar extends and the signed value label, so grey reads fine for "down".
+C_POS = "#E3120B"  # positive contribution: pushes the prediction up
+C_NEG = "#7A7A7A"  # negative contribution: pushes the prediction down
 
 # Economist headline/body faces aren't redistributable, so we lead with
 # their names and fall back to a clean, widely-available sans.

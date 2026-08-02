@@ -1,9 +1,14 @@
-"""Gallery example: render `beeswarm` across several datasets, tasks and models.
+"""Gallery for `beeswarm`: global feature-impact across datasets and tasks.
 
-This exercises the full range the chart is built for — binary classification,
-multiclass (one class sliced), regression, few vs many features, the opt-in
-aggregate row, and a transparent background — and saves one PNG per case into
+Exercises the full range — binary classification, multiclass (one class
+sliced), regression, few vs many features, the opt-in aggregate row, a
+transparent background, and a second model — and saves one PNG per case into
 `examples/images/beeswarm/`.
+
+File names are kept parallel with the `waterfall` gallery
+(01_binary_classification, 02_regression, 03_multiclass_few_features,
+04_multiclass_many_features, 05_show_other, 06_transparent, ...) so the same
+case can be compared across chart types.
 
 Run it (needs the optional `example` deps: shap + scikit-learn):
 
@@ -49,23 +54,23 @@ def save(name, fig):
     print(f"Saved {path.name}")
 
 
-def rf(clf_kwargs, X, y):
-    model = RandomForestClassifier(random_state=0, **clf_kwargs).fit(X, y)
+def rf(X, y, **kwargs):
+    model = RandomForestClassifier(random_state=0, **kwargs).fit(X, y)
     return shap.TreeExplainer(model)(X)
 
 
-# 1. Binary classification — breast cancer, malignant class (index 0).
+# 01. Binary classification — breast cancer, malignant class (index 0).
 bc = load_breast_cancer(as_frame=True)
-e = rf(dict(n_estimators=200), bc.data, bc.target)
+e = rf(bc.data, bc.target, n_estimators=200)
 fig, _ = se.beeswarm(
     e[..., 0],
     title="What drives the malignancy prediction",
     source="Data: sklearn breast cancer · Model: Random Forest (200 trees)",
     direction_labels=("← toward benign", "toward malignant →"),
 )
-save("01_breast_cancer_binary", fig)
+save("01_binary_classification", fig)
 
-# 2. Regression — diabetes disease progression (values are 2-D, no class axis).
+# 02. Regression — diabetes disease progression (values are 2-D, no class axis).
 db = load_diabetes(as_frame=True)
 reg = RandomForestRegressor(n_estimators=200, random_state=0).fit(db.data, db.target)
 e = shap.TreeExplainer(reg)(db.data)
@@ -75,20 +80,20 @@ fig, _ = se.beeswarm(
     source="Data: sklearn diabetes · Model: Random Forest regressor",
     direction_labels=("← lower progression", "higher progression →"),
 )
-save("02_diabetes_regression", fig)
+save("02_regression", fig)
 
-# 3. Multiclass, few features — iris, virginica class (only 4 features).
+# 03. Multiclass, few features — iris, virginica class (only 4 features).
 ir = load_iris(as_frame=True)
-e = rf(dict(n_estimators=200), ir.data, ir.target)
+e = rf(ir.data, ir.target, n_estimators=200)
 fig, _ = se.beeswarm(
     e[..., 2],
     title="What drives an iris being classified virginica",
     source="Data: sklearn iris · Model: Random Forest · class = virginica",
     direction_labels=("← away from virginica", "toward virginica →"),
 )
-save("03_iris_multiclass_fewfeat", fig)
+save("03_multiclass_few_features", fig)
 
-# 4. Multiclass, many features — digits, the digit "8" (64 pixel features).
+# 04. Multiclass, many features — digits, the digit "8" (64 pixel features).
 dg = load_digits(as_frame=True)
 model = RandomForestClassifier(n_estimators=150, random_state=0).fit(dg.data, dg.target)
 e = shap.TreeExplainer(model)(dg.data.iloc[:400])
@@ -98,9 +103,9 @@ fig, _ = se.beeswarm(
     source="Data: sklearn digits · Model: Random Forest · class = 8",
     direction_labels=("← away from 8", "toward 8 →"),
 )
-save("04_digits_many_features", fig)
+save("04_multiclass_many_features", fig)
 
-# 5. The opt-in aggregate row — same digits case with show_other=True.
+# 05. The opt-in aggregate row — same digits case with show_other=True.
 fig, _ = se.beeswarm(
     e[..., 8],
     title="Digit “8”, with the remaining pixels summed",
@@ -108,11 +113,20 @@ fig, _ = se.beeswarm(
     show_other=True,
     direction_labels=("← away from 8", "toward 8 →"),
 )
-save("05_digits_show_other", fig)
+save("05_show_other", fig)
 
-# 6. Different model — gradient boosting (binary). TreeExplainer returns a
-#    single 2-D output for binary GBM (log-odds), so no class slice is needed.
+# 06. Transparent background (for dark slides / coloured backgrounds).
 wn = load_wine(as_frame=True)
+e = rf(wn.data, wn.target, n_estimators=150)
+fig, _ = se.beeswarm(
+    e[..., 0],
+    title="Wine class 0 (transparent background)",
+    source="Data: sklearn wine · Model: Random Forest",
+    transparent=True,
+)
+save("06_transparent", fig)
+
+# 07. Different model — gradient boosting (binary, single 2-D output).
 gb = GradientBoostingClassifier(random_state=0).fit(bc.data, bc.target)
 e = shap.TreeExplainer(gb)(bc.data)
 expl = e[..., 0] if e.values.ndim == 3 else e
@@ -122,16 +136,6 @@ fig, _ = se.beeswarm(
     source="Data: sklearn breast cancer · Model: Gradient Boosting",
     direction_labels=("← toward benign", "toward malignant →"),
 )
-save("06_gradient_boosting_binary", fig)
-
-# 7. Transparent background (for dark slides / coloured backgrounds).
-e = rf(dict(n_estimators=150), wn.data, wn.target)
-fig, _ = se.beeswarm(
-    e[..., 0],
-    title="Wine class 0 (transparent background)",
-    source="Data: sklearn wine · Model: Random Forest",
-    transparent=True,
-)
-save("07_wine_transparent", fig)
+save("07_gradient_boosting", fig)
 
 print(f"\nGallery written to {OUT}")
