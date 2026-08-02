@@ -8,7 +8,16 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.cm import ScalarMappable
 
 from ._finalize import finalize
-from ._theme import C_GRID, C_HIGH, C_LOW, C_MID, C_OTHER_BAR, C_SPINE, set_theme
+from ._theme import (
+    C_GRID,
+    C_HIGH,
+    C_LABEL_MUTED,
+    C_LOW,
+    C_MID,
+    C_OTHER_BAR,
+    C_SPINE,
+    set_theme,
+)
 from ._utils import extract_explanation, top_feature_order
 
 _CMAP = LinearSegmentedColormap.from_list("shap_editorial", [C_LOW, C_MID, C_HIGH])
@@ -135,16 +144,21 @@ def beeswarm(
     ax.grid(axis="x", color=C_GRID, linewidth=0.7, zorder=-1)
     ax.set_axisbelow(True)
 
-    # Slim colour legend: Low -> High feature value.
+    fig.subplots_adjust(top=0.80, left=0.28, right=0.95, bottom=0.10)
+
+    # Horizontal colour key at the top: Low -> High feature value. A
+    # horizontal bar with horizontal labels reads better than a vertical
+    # colorbar with a rotated axis label (which forces a head-tilt).
     sm = ScalarMappable(cmap=_CMAP)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax, fraction=0.04, pad=0.02, aspect=30)
+    cax = fig.add_axes([0.77, 0.905, 0.18, 0.018])
+    cbar = fig.colorbar(sm, cax=cax, orientation="horizontal")
     cbar.set_ticks([0, 1])
     cbar.set_ticklabels(["Low", "High"])
-    cbar.set_label("Feature value", fontsize=8.5)
+    cbar.ax.tick_params(length=0, labelsize=8.5, colors=C_LABEL_MUTED)
     cbar.outline.set_visible(False)
+    cax.set_title("Feature value", fontsize=8.5, color=C_LABEL_MUTED, loc="left", pad=4)
 
-    fig.subplots_adjust(top=0.80, left=0.28, right=0.90, bottom=0.10)
     finalize(fig, ax, title=title, subtitle=subtitle, source=source)
 
     return fig, ax

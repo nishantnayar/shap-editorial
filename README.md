@@ -20,7 +20,7 @@
   <img src="examples/beeswarm_output.png" alt="Editorial beeswarm plot of SHAP values" width="720">
 </p>
 
-<p align="center"><em>One <code>beeswarm()</code> call — title, subtitle, source line, and a distinct palette, ready to publish.</em></p>
+<p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style red tab, title block, house palette, and a horizontal colour key, ready to publish.</em></p>
 
 ## What it is
 
@@ -43,9 +43,10 @@ manual rework in another tool. This package removes that step.
 
 |                        | `shap.summary_plot()`         | `shap_editorial.beeswarm()`               |
 | ---------------------- | ----------------------------- | ----------------------------------------- |
-| Typography             | matplotlib defaults           | Editorial font stack, sized hierarchy     |
-| Title / subtitle       | none / jargon axis label      | Left-aligned title, plain-language subtitle |
-| Colour palette         | SHAP red/blue                 | Distinct muted steel-blue → brick-red     |
+| Typography             | matplotlib defaults           | Economist-style font stack, sized hierarchy |
+| Title / subtitle       | none / jargon axis label      | Red corner tab, bold flush-left title, plain-language subtitle |
+| Colour palette         | SHAP red/blue                 | *The Economist*'s house blue → red          |
+| Colour key             | vertical bar, rotated label   | Horizontal key, horizontal labels           |
 | Source / attribution   | none                          | Optional source line                      |
 | Cross-chart consistency| varies by plot type           | Shared theme + finalize layer             |
 

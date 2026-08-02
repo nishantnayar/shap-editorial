@@ -72,11 +72,15 @@ Design choices worth knowing:
   quantity and was a real bug caught during initial testing. Don't
   reintroduce a mean-based aggregation here.
 - **Colour scale is per-feature min-max normalized** (`_norm()` inside
-  `_beeswarm.py`), matching SHAP's own convention, but using a distinct
-  palette (muted steel blue → brick red) so output doesn't look like an
-  unstyled `shap.summary_plot()`.
-- **Theme is self-contained**, no dependency on any other chart-styling
-  package. Palette and font stack live in `_theme.py` only.
+  `_beeswarm.py`), matching SHAP's own convention, but using *The
+  Economist*'s house palette (Economist blue `#006BA2` → neutral →
+  Economist red `#E3120B`) so output doesn't look like an unstyled
+  `shap.summary_plot()`.
+- **Theme is modelled on *The Economist*'s data-journalism style** and is
+  self-contained — no dependency on any other chart-styling package.
+  Palette, font stack, and the signature red corner tab live in
+  `_theme.py` / `_finalize.py` only. Every chart type gets the tab and
+  title block for free via `finalize()`.
 
 ## Testing conventions
 
