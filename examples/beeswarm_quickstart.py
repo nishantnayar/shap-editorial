@@ -21,18 +21,24 @@ model.fit(X, y)
 explainer = shap.TreeExplainer(model)
 explanation = explainer(X)
 
-# TreeExplainer on a binary classifier returns shape (n, features, 2)
-# classes here; take the "malignant present" class (index 1).
+# TreeExplainer on a binary classifier returns shape (n, features, 2).
+# In sklearn's breast cancer dataset the target is coded 0 = malignant,
+# 1 = benign, so we take class 0 to explain the *malignant* prediction —
+# matching the title. (Slicing class 1 would explain P(benign) instead,
+# which flips the direction of every effect and contradicts the title.)
 if explanation.values.ndim == 3:
-    explanation = explanation[..., 1]
+    explanation = explanation[..., 0]
 
 fig, ax = se.beeswarm(
     explanation,
     max_display=10,
     title="What drives the malignancy prediction",
     source="Data: sklearn breast cancer dataset · Model: Random Forest (200 trees)",
+    direction_labels=("← toward benign", "toward malignant →"),
 )
 
-out_path = Path(__file__).resolve().parent / "beeswarm_output.png"
+out_dir = Path(__file__).resolve().parent / "images" / "beeswarm"
+out_dir.mkdir(parents=True, exist_ok=True)
+out_path = out_dir / "hero.png"
 fig.savefig(out_path, dpi=200, bbox_inches="tight")
 print(f"Saved {out_path}")

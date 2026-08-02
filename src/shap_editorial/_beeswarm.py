@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.cm import ScalarMappable
+from matplotlib.colors import LinearSegmentedColormap
 
-from ._finalize import finalize
+from ._finalize import finalize, title_block_height
 from ._theme import (
     C_GRID,
     C_HIGH,
@@ -53,9 +53,14 @@ def _analysis_line(values, data, names, kept_idx):
         return None
     name = names[top]
     if abs(r) < 0.15:
-        return f"“{name}” is the strongest driver, though its effect direction is mixed."
+        return (
+            f"“{name}” is the strongest driver, though its effect direction is mixed."
+        )
     direction = "higher" if r > 0 else "lower"
-    return f"“{name}” is the strongest driver: higher values push the prediction {direction}."
+    return (
+        f"“{name}” is the strongest driver: "
+        f"higher values push the prediction {direction}."
+    )
 
 
 def _row_jitter(n, row_height=0.7, rng=None):
@@ -72,13 +77,14 @@ def beeswarm(
     *,
     max_display: int = 10,
     title: str | None = None,
-    subtitle: str | None = "SHAP value (impact on model output)",
+    subtitle: str | None = None,
     source: str | None = None,
     feature_names=None,
-    figsize=(8, 5.5),
+    figsize=None,
     show_other: bool = False,
     analysis: bool | str = True,
     highlight: bool = True,
+    direction_labels: bool | tuple[str, str] = True,
     transparent: bool = False,
     ax=None,
 ):
@@ -106,13 +112,22 @@ def beeswarm(
     highlight : bool
         If True (default), draw a subtle highlight band behind the top-driver
         row and bold its label, so the eye lands on the strongest feature.
+    direction_labels : bool | tuple[str, str]
+        Small labels under the x-axis telling the reader what each side means.
+        True (default) shows the generic "← pushes prediction lower /
+        pushes prediction higher →". Pass a (left, right) tuple for
+        domain-specific wording (e.g. ("← toward benign", "toward malignant →")),
+        or False to omit them.
     title, subtitle, source : str | None
-        Editorial title stack. `subtitle` defaults to a plain-language
-        description of what the x-axis means; pass None to omit it.
+        Editorial title stack. `subtitle` defaults to None — the analysis line
+        and directional axis labels now describe the x-axis, so a "SHAP value"
+        subtitle is redundant; pass one explicitly if you want the metric named.
     feature_names : list[str] | None
         Overrides names on the explanation object, if provided.
-    figsize : tuple
-        Only used if `ax` is None (a new figure is created).
+    figsize : tuple | None
+        Only used if `ax` is None. Defaults to None, in which case the height is
+        chosen automatically from the number of rows (so few- and many-feature
+        charts both look tight); pass an explicit (w, h) to override.
     transparent : bool
         If True, render (and save) with a transparent background instead of
         white — useful for coloured slides or dark web pages. Ignored when
@@ -141,7 +156,32 @@ def beeswarm(
     has_other = show_other and len(other_idx) > 0
     n_rows = len(kept_idx) + (1 if has_other else 0)
 
+    # Resolve the takeaway text and directional labels up front, so the title
+    # block and bottom margin can be sized before the figure is created.
+    analysis_text = None
+    if analysis:
+        analysis_text = (
+            analysis
+            if isinstance(analysis, str)
+            else _analysis_line(values, data, names, kept_idx)
+        )
+    dir_labels = None
+    if direction_labels:
+        dir_labels = (
+            ("← pushes prediction lower", "pushes prediction higher →")
+            if direction_labels is True
+            else tuple(direction_labels)
+        )
+
+    # Inch-based margins: reserve room for the title block on top and the tick /
+    # directional / source labels below, then give each data row a fixed height.
+    top_in = title_block_height(title=title, subtitle=subtitle, analysis=analysis_text)
+    bottom_in = 0.9 if dir_labels else 0.5
+    _ROW_IN = 0.42
+
     if ax is None:
+        if figsize is None:
+            figsize = (8.0, top_in + _ROW_IN * n_rows + bottom_in)
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.figure
@@ -226,23 +266,22 @@ def beeswarm(
         ax.axhspan(top_y - 0.5, top_y + 0.5, color=C_HIGHLIGHT, zorder=-3)
         ax.get_yticklabels()[top_y].set_fontweight("bold")
 
-    analysis_text = None
-    if analysis:
-        analysis_text = (
-            analysis if isinstance(analysis, str)
-            else _analysis_line(values, data, names, kept_idx)
-        )
+    # Convert the inch-based margins to figure fractions for the current height.
+    height = fig.get_figheight()
+    fig.subplots_adjust(
+        top=1.0 - top_in / height,
+        bottom=bottom_in / height,
+        left=0.28,
+        right=0.95,
+    )
 
-    # Leave a little more headroom above the plot when a takeaway line is shown.
-    top = 0.77 if analysis_text else 0.80
-    fig.subplots_adjust(top=top, left=0.28, right=0.95, bottom=0.10)
-
-    # Horizontal colour key at the top: Low -> High feature value. A
+    # Horizontal colour key near the top-right: Low -> High feature value. A
     # horizontal bar with horizontal labels reads better than a vertical
-    # colorbar with a rotated axis label (which forces a head-tilt).
+    # colorbar with a rotated axis label (which forces a head-tilt). Positioned
+    # in inches from the top so it tracks the title block at any figure height.
     sm = ScalarMappable(cmap=_CMAP)
     sm.set_array([])
-    cax = fig.add_axes([0.77, 0.905, 0.18, 0.018])
+    cax = fig.add_axes([0.77, 1.0 - 0.55 / height, 0.18, 0.11 / height])
     cbar = fig.colorbar(sm, cax=cax, orientation="horizontal")
     cbar.set_ticks([0, 1])
     cbar.set_ticklabels(["Low", "High"])
@@ -250,6 +289,20 @@ def beeswarm(
     cbar.outline.set_visible(False)
     cax.set_title("Feature value", fontsize=8.5, color=C_LABEL_MUTED, loc="left", pad=4)
 
-    finalize(fig, ax, title=title, subtitle=subtitle, source=source, analysis=analysis_text)
+    # Directional labels under the axis: the single clearest cue for "which
+    # side means what" — negative SHAP lowers the prediction, positive raises it.
+    if dir_labels:
+        left_txt, right_txt = dir_labels
+        y = 0.42 / height
+        fig.text(
+            0.28, y, left_txt, ha="left", va="bottom", fontsize=9, color=C_LABEL_MUTED
+        )
+        fig.text(
+            0.95, y, right_txt, ha="right", va="bottom", fontsize=9, color=C_LABEL_MUTED
+        )
+
+    finalize(
+        fig, ax, title=title, subtitle=subtitle, source=source, analysis=analysis_text
+    )
 
     return fig, ax

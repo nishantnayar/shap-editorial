@@ -1,16 +1,18 @@
-import numpy as np
-import pytest
 import sys
 from pathlib import Path
 
+import numpy as np
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from _helpers import FakeExplanation
 
 from shap_editorial._utils import (
     ShapEditorialError,
     extract_explanation,
     top_feature_order,
 )
-from _helpers import FakeExplanation
 
 
 def test_extract_explanation_basic():

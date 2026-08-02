@@ -10,9 +10,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from _helpers import FakeExplanation
+
 import shap_editorial as se
 from shap_editorial._utils import ShapEditorialError
-from _helpers import FakeExplanation
 
 
 def _make_explanation(n_samples=40, n_features=6, seed=0):

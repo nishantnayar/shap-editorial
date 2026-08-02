@@ -100,23 +100,30 @@ Design choices worth knowing:
 - `matplotlib.use("Agg")` at the top of any test file that plots —
   headless, no display available in CI or this sandbox.
 - Use `tests/_helpers.py::FakeExplanation` instead of importing `shap`
-  in unit tests. Reserve real `shap` + a real trained model for a
-  standalone example script (see `examples/example_beeswarm.py`), not
+  in unit tests. Reserve real `shap` + a real trained model for the
+  standalone example scripts (see `examples/beeswarm_quickstart.py`), not
   for the pytest suite — keeps `pip install -e .[dev]` fast.
 - Run tests from the project root: `python3 -m pytest tests/ -q`
-- Current status: 15 tests passing (`test_utils.py`, `test_beeswarm.py`).
+- Current status: 16 tests passing (`test_utils.py`, `test_beeswarm.py`).
 
-## Running the real end-to-end example
+## Running the real end-to-end examples
 
 ```
 pip install shap scikit-learn --break-system-packages
-python3 examples/example_beeswarm.py
+python3 examples/beeswarm_quickstart.py   # the hero chart
+python3 examples/beeswarm_gallery.py       # many datasets / tasks
 ```
 
-Trains a `RandomForestClassifier` on `sklearn`'s breast cancer dataset,
-computes real SHAP values via `shap.TreeExplainer`, and saves
-`examples/beeswarm_output.png`. Use this to sanity-check any change
-visually — the unit tests check structure/correctness, not appearance.
+`beeswarm_quickstart.py` trains a `RandomForestClassifier` on `sklearn`'s
+breast cancer dataset, computes real SHAP values via `shap.TreeExplainer`,
+and saves `examples/images/beeswarm/hero.png`. `beeswarm_gallery.py` sweeps
+several datasets/tasks into `examples/images/beeswarm/`. Use these to
+sanity-check any change visually — the unit tests check
+structure/correctness, not appearance.
+
+Examples are namespaced by chart type: scripts are prefixed with the chart
+(`beeswarm_*.py`) and outputs go to `images/<chart>/`, so new chart types
+(`waterfall`, `bar`) slot in without reorganising.
 
 ## Naming
 

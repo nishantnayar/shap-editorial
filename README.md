@@ -17,10 +17,10 @@
 ---
 
 <p align="center">
-  <img src="examples/beeswarm_output.png" alt="Editorial beeswarm plot of SHAP values" width="720">
+  <img src="examples/images/beeswarm/hero.png" alt="Editorial beeswarm plot of SHAP values" width="720">
 </p>
 
-<p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style red tab, title block, an explainable grey→red colour scale, and a horizontal colour key, ready to publish.</em></p>
+<p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style title block, an auto-generated takeaway line, a highlighted top driver, directional axis cues, and an explainable grey→red colour scale, ready to publish.</em></p>
 
 ## What it is
 
@@ -45,6 +45,8 @@ manual rework in another tool. This package removes that step.
 | ---------------------- | ----------------------------- | ----------------------------------------- |
 | Typography             | matplotlib defaults           | Economist-style font stack, sized hierarchy |
 | Title / subtitle       | none / jargon axis label      | Red corner tab, bold flush-left title, plain-language subtitle |
+| Analysis               | none                          | Auto takeaway line + highlighted top-driver row |
+| Direction cues         | reader must infer             | "← pushes prediction lower / higher →" under the axis |
 | Colour scale           | SHAP red/blue                 | Explainable grey → red ("redder = higher"), high values pop |
 | Colour key             | vertical bar, rotated label   | Horizontal key, horizontal labels           |
 | Source / attribution   | none                          | Optional source line                      |
@@ -79,13 +81,13 @@ import shap_editorial as se
 
 # 1. Compute SHAP values however you normally would
 explainer = shap.TreeExplainer(model)
-explanation = explainer(X_test)          # a shap.Explanation object
+explanation = explainer(X_test)  # a shap.Explanation object
 
-# 2. Render it, publication-ready
+# 2. Render it, publication-ready — an auto takeaway line, a highlighted
+#    top driver, and directional axis labels come for free.
 fig, ax = se.beeswarm(
     explanation,
     title="What drives the churn prediction",
-    subtitle="SHAP value (impact on model output)",
     source="Source: internal model v3 · n = 2,000 held-out customers",
     max_display=10,
 )
@@ -97,14 +99,17 @@ fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")
 `beeswarm()` returns the `(fig, ax)` pair, so you keep full matplotlib control
 for any further tweaks.
 
-### Run the real end-to-end example
+### Run the real end-to-end examples
 
 ```bash
-uv run --extra example python examples/example_beeswarm.py
+uv run --extra example python examples/beeswarm_quickstart.py   # the hero chart
+uv run --extra example python examples/beeswarm_gallery.py       # many datasets/tasks
 ```
 
-Trains a `RandomForestClassifier` on scikit-learn's breast-cancer dataset,
-computes real SHAP values, and writes `examples/beeswarm_output.png`.
+`beeswarm_quickstart.py` trains a `RandomForestClassifier` on scikit-learn's
+breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
+`beeswarm_gallery.py` renders a range of datasets and tasks — see
+[`examples/`](examples/) for the full gallery and how to run it.
 
 ## API
 
@@ -122,11 +127,14 @@ beeswarm(
     *,
     max_display: int = 10,
     title: str | None = None,
-    subtitle: str | None = "SHAP value (impact on model output)",
+    subtitle: str | None = None,
     source: str | None = None,
     feature_names=None,
-    figsize=(8, 5.5),
+    figsize=None,
     show_other: bool = False,
+    analysis: bool | str = True,
+    highlight: bool = True,
+    direction_labels: bool | tuple[str, str] = True,
     transparent: bool = False,
     ax=None,
 )
@@ -141,6 +149,17 @@ beeswarm(
   property). Defaults to `False` — just the top `max_display`. That aggregate
   row can't carry the colour scale (it sums across features), so it renders flat
   grey; it's opt-in for completeness.
+- **`analysis`** — the editorial takeaway line under the title. `True` (default)
+  auto-generates a one-sentence insight from the top driver's SHAP pattern
+  (e.g. *"'worst concave points' is the strongest driver: higher values push the
+  prediction lower"*); pass a string for your own, or `False` to omit. The
+  auto text only narrates the pattern already in the plot — no new computation.
+- **`highlight`** — when `True` (default), draw a subtle band behind the
+  top-driver row and bold its label so the eye lands on the strongest feature.
+- **`direction_labels`** — small labels under the x-axis for "which side means
+  what". `True` (default) shows the generic *"← pushes prediction lower /
+  pushes prediction higher →"*; pass a `(left, right)` tuple for domain-specific
+  wording (e.g. `("← toward benign", "toward malignant →")`), or `False` to omit.
 - **`title` / `subtitle` / `source`** — the editorial text stack. Pass `None`
   to omit any of them.
 - **`feature_names`** — override names on the explanation object.
@@ -153,6 +172,37 @@ beeswarm(
   fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")  # transparent
   ```
 - **`ax`** — draw onto an existing axes instead of creating a new figure.
+
+## Interpreting direction (read this)
+
+A beeswarm shows the direction of effect for **one class** — whichever one your
+`Explanation` holds. `shap-editorial` styles what you give it; it **cannot know
+your class coding**, so *you* are responsible for framing direction correctly.
+
+For a binary classifier, `TreeExplainer` returns values of shape
+`(n, features, 2)`, and you must slice a class before plotting. Which class you
+slice flips the sign of every effect:
+
+```python
+# sklearn breast cancer: target is coded 0 = malignant, 1 = benign
+expl = explainer(X)  # shape (n, features, 2)
+
+se.beeswarm(
+    expl[..., 0],  # explains P(malignant)
+    title="What drives the malignancy prediction",
+    direction_labels=("← toward benign", "toward malignant →"),
+)
+
+se.beeswarm(
+    expl[..., 1],  # explains P(benign) — every effect flips!
+    title="What drives the benign prediction",
+)
+```
+
+If a takeaway ever reads "backwards" (e.g. *"higher 'worst concave points'
+pushes the prediction lower"* under a **malignancy** title), you've almost
+certainly sliced the opposite class. Use `direction_labels=(left, right)` to
+state your framing explicitly — it's the clearest guard against this.
 
 ## Design principles
 
@@ -181,6 +231,22 @@ uv run python -m pytest tests/ -q
 Tests use a lightweight `FakeExplanation` stand-in rather than importing the
 real `shap` package, so the suite stays fast and dependency-light. Plotting
 tests run headless via matplotlib's `Agg` backend.
+
+### Code style
+
+Formatting and linting use [Ruff](https://docs.astral.sh/ruff/) (config in
+`pyproject.toml`), enforced via a pre-commit hook. Set it up once:
+
+```bash
+uv run pre-commit install     # run Ruff automatically on every commit
+```
+
+Run it manually anytime:
+
+```bash
+uv run ruff format .          # format
+uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it can
+```
 
 ## Roadmap
 

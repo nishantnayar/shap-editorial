@@ -10,9 +10,9 @@ dist/
 .venv/
 .uv-cache/
 
-# Example output (but keep the README showcase image)
+# Example output: the committed showcase + gallery live under examples/images/
+# and ARE tracked; ignore only stray PNGs written to the examples/ root.
 examples/*.png
-!examples/beeswarm_output.png
 
 # IDE
 .idea/
@@ -21,4 +21,5 @@ examples/*.png
 # OS
 .DS_Store
 Thumbs.db
+CLAUDE.md
 CLAUDE.md
