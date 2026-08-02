@@ -28,6 +28,12 @@
 
 <p align="center"><em>…and one <code>waterfall()</code> call to explain a single prediction — same red tab and grey→red palette, plain-language endpoints (<em>Average prediction → This prediction</em>, no <code>E[f(x)]</code>/<code>f(x)</code> jargon), and an auto takeaway.</em></p>
 
+<p align="center">
+  <img src="examples/images/bar/hero.png" alt="Editorial bar chart of global SHAP feature importance" width="720">
+</p>
+
+<p align="center"><em>…and one <code>bar()</code> call for a clean global importance ranking. Three chart types, one consistent look.</em></p>
+
 ## What it is
 
 `shap-editorial` is a thin **styling and layout layer** on top of
@@ -133,6 +139,7 @@ breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
 | --------------------- | --------------------------------------------------------------------------- |
 | `beeswarm(...)`       | Global feature-impact summary across all samples. Returns `(fig, ax)`.      |
 | `waterfall(...)`      | Single-prediction explanation — how each feature moves the output from the average prediction to this one. Returns `(fig, ax)`. |
+| `bar(...)`            | Global feature-importance ranking (mean \|SHAP\| per feature). Returns `(fig, ax)`. |
 | `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally (called automatically by chart functions). Pass `transparent=True` for a no-background theme. |
 | `ShapEditorialError`  | Raised when the input isn't a usable SHAP explanation. Subclass of `ValueError`. |
 
@@ -241,6 +248,44 @@ waterfall(
   behave as in `beeswarm`. The auto takeaway names the largest contribution and
   its direction for this instance.
 
+### `bar` — global importance ranking
+
+The simplest of the three: each bar is a feature's **mean absolute SHAP value**
+across all samples, a single direction-free measure of importance. Use it when
+you want a clean ranking rather than the beeswarm's full distribution. Unlike
+`beeswarm`, `bar` does not need `.data`.
+
+```python
+fig, ax = se.bar(explanation, title="Which features matter most")
+```
+
+```python
+bar(
+    shap_values,
+    *,
+    max_display: int = 10,
+    title: str | None = None,
+    subtitle: str | None = None,
+    source: str | None = None,
+    feature_names=None,
+    figsize=None,
+    show_other: bool = False,
+    analysis: bool | str = True,
+    highlight: bool = True,
+    show_values: bool = True,
+    axis_label: str | None = "Average impact on the model's output",
+    transparent: bool = False,
+    ax=None,
+)
+```
+
+- **`shap_values`** — a single-output explanation (slice a class for
+  multiclass). `.data` is optional here.
+- **`show_values`** — print each bar's importance value at its end (default on).
+- **`axis_label`** — plain-language caption under the x-axis; pass `None` to omit.
+- **`max_display` / `show_other` / `analysis` / `highlight` / `transparent` /
+  `title` / `source`** — behave as in `beeswarm`.
+
 ## Interpreting direction (read this)
 
 A beeswarm shows the direction of effect for **one class** — whichever one your
@@ -321,7 +366,7 @@ uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it c
 - [x] `beeswarm()` — global feature-impact summary
 - [x] Packaging, CI, LICENSE
 - [x] `waterfall()` — single-prediction explanation
-- [ ] `bar()` — global feature-importance bar chart
+- [x] `bar()` — global feature-importance bar chart
 - [ ] First PyPI release (`v0.1`)
 
 **Out of scope** (by design): real-time model monitoring, drift/bias
