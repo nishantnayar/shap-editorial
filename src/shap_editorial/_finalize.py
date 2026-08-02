@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from matplotlib.patches import Rectangle
+from matplotlib.transforms import blended_transform_factory
 
 from ._theme import C_ECON_RED, C_LABEL, C_LABEL_MUTED, C_SOURCE
 
@@ -19,11 +20,15 @@ _SOURCE_UP_IN = 0.12  # source line, measured up from the bottom edge
 _TAB_W_FRAC = 0.045  # tab width (horizontal, so figure-fraction is fine)
 _LEFT = 0.025  # flush-left with the whole graphic
 
+# Vertical space per data row, shared by every chart type so a 5-row and a
+# 15-row chart have identically-spaced rows.
+ROW_HEIGHT_IN = 0.42
+
 
 def title_block_height(*, title=None, subtitle=None, analysis=None) -> float:
     """Inches of vertical space the title block needs for the given content.
 
-    `_beeswarm` uses this to reserve top margin so the plot starts just below
+    Chart modules use this to reserve top margin so the plot starts just below
     the block. Kept in sync with `finalize`'s own cursor arithmetic.
     """
     h = _TAB_TOP_IN + _TAB_H_IN + _GAP_AFTER_TAB_IN
@@ -118,3 +123,32 @@ def finalize(fig, ax, *, title=None, subtitle=None, source=None, analysis=None):
             ha="left",
             va="bottom",
         )
+
+
+def highlight_row(fig, ax, row_y):
+    """Mark the headline row: bold its label and draw a dotted outline around it.
+
+    Shared by every chart type so the highlight is identical. The outline is a
+    blended-transform rectangle (x in axes fraction, y in data), so it spans the
+    plot width and tracks the row regardless of the data's x scale. Corners are
+    square: rounded corners on a row this wide-and-thin balloon in matplotlib.
+    """
+    labels = ax.get_yticklabels()
+    if 0 <= row_y < len(labels):
+        labels[row_y].set_fontweight("bold")
+
+    trans = blended_transform_factory(ax.transAxes, ax.transData)
+    ax.add_patch(
+        Rectangle(
+            (0.006, row_y - 0.46),
+            0.988,  # axes-fraction width: full plot, small inset from the edges
+            0.92,  # data height: just under one row
+            transform=trans,
+            fill=False,
+            edgecolor=C_ECON_RED,
+            linewidth=1.5,
+            linestyle=(0, (1, 1.8)),
+            zorder=6,
+            clip_on=False,
+        )
+    )

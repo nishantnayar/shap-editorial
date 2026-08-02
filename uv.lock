@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
@@ -847,7 +847,7 @@ wheels = [
 
 [[package]]
 name = "shap-editorial"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
@@ -856,6 +856,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "pillow" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
@@ -867,8 +868,9 @@ example = [
 
 [package.metadata]
 requires-dist = [
-    { name = "matplotlib", specifier = ">=3.6" },
+    { name = "matplotlib", specifier = ">=3.9" },
     { name = "numpy", specifier = ">=1.23" },
+    { name = "pillow", marker = "extra == 'dev'", specifier = ">=10" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },

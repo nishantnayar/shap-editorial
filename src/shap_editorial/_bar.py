@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 
-from ._finalize import finalize, title_block_height
+from ._finalize import ROW_HEIGHT_IN, finalize, highlight_row, title_block_height
 from ._theme import (
     C_GRID,
     C_HIGH,
-    C_HIGHLIGHT,
     C_LABEL_MUTED,
     C_LOW,
     C_MID,
     C_OTHER_BAR,
     set_theme,
 )
-from ._utils import extract_explanation, top_feature_order
+from ._utils import ShapEditorialError, extract_explanation, top_feature_order
 
 # Bars are shaded by importance on the grey→red scale: the most important
 # feature is red and pops, lower ones recede to grey — matching the beeswarm's
@@ -36,6 +36,19 @@ def _analysis_line(importance, names, kept_idx):
         if ratio >= 1.15:
             msg += f" — about {ratio:.1f}× the next feature's impact"
     return msg + "."
+
+
+def _value_label(ax, x, y):
+    ax.text(
+        x,
+        y,
+        f"  {x:.3g}",
+        va="center",
+        ha="left",
+        fontsize=8.5,
+        color=C_LABEL_MUTED,
+        zorder=4,
+    )
 
 
 def bar(
@@ -68,7 +81,7 @@ def bar(
         single-output (binary/regression) explanation — for multiclass models,
         slice a class first. Unlike `beeswarm`, `.data` is not required.
     max_display : int
-        Number of top features (by mean |SHAP|) to show.
+        Number of top features (by mean |SHAP|) to show. Must be at least 1.
     show_other : bool
         If True, collapse the remaining features into a single "N other
         features" bar at the bottom (the summed importance of the rest).
@@ -94,7 +107,11 @@ def bar(
         Save to a format with an alpha channel (PNG, SVG, PDF); JPEG has no
         transparency and will flatten the background.
     ax : matplotlib.axes.Axes | None
-        Draw onto an existing axes instead of creating a new figure.
+        Draw onto an existing axes instead of creating a new figure. Intended
+        for a single-axes figure you manage: the call still adjusts figure
+        margins and adds figure-level elements (the red tab, title block, and
+        axis caption) positioned for that layout, so it is not suitable for
+        embedding as one panel in a multi-panel figure.
 
     Returns
     -------
@@ -105,8 +122,12 @@ def bar(
     Returning `(fig, ax)` means you can save in any matplotlib format:
     `fig.savefig("chart.png" | ".jpg" | ".svg" | ".pdf", dpi=200,
     bbox_inches="tight")`. Use SVG/PDF for resolution-independent print output.
+
+    The editorial theme is applied inside a matplotlib rc context, so your own
+    global rcParams survive the call untouched.
     """
-    set_theme(transparent=transparent)
+    if max_display < 1:
+        raise ShapEditorialError(f"max_display must be at least 1, got {max_display}.")
 
     values, _data, names = extract_explanation(shap_values, feature_names)
     importance = np.abs(values).mean(axis=0)
@@ -125,84 +146,83 @@ def bar(
 
     top_in = title_block_height(title=title, subtitle=subtitle, analysis=analysis_text)
     bottom_in = 0.85 if axis_label else 0.5
-    row_in = 0.42
-    if ax is None:
-        if figsize is None:
-            figsize = (8.0, top_in + row_in * n_rows + bottom_in)
-        fig, ax = plt.subplots(figsize=figsize)
-    else:
-        fig = ax.figure
 
-    # Bottom row reserved for the aggregate when present; named features above
-    # it, most important at the top.
-    base = 1 if has_other else 0
-    row_labels = [""] * n_rows
+    with mpl.rc_context():
+        set_theme(transparent=transparent)
 
-    def _value_label(x, y):
-        if show_values:
-            ax.text(
-                x,
+        if ax is None:
+            if figsize is None:
+                figsize = (8.0, top_in + ROW_HEIGHT_IN * n_rows + bottom_in)
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.figure
+
+        base = 1 if has_other else 0  # bottom row belongs to the aggregate
+        row_labels = [""] * n_rows
+
+        # kept_idx is already sorted descending, so the first entry sets both the
+        # colour scale and the x-limit.
+        vmax = float(importance[kept_idx[0]]) if len(kept_idx) else 0.0
+        for i, idx in enumerate(kept_idx[::-1]):  # most important ends up on top
+            y = base + i
+            frac = importance[idx] / vmax if vmax > 0 else 0.0
+            ax.barh(
                 y,
-                f"  {x:.3g}",
-                va="center",
-                ha="left",
-                fontsize=8.5,
+                importance[idx],
+                height=0.68,
+                color=_CMAP(frac),
+                linewidth=0,
+                zorder=3,
+            )
+            if show_values:
+                _value_label(ax, importance[idx], y)
+            row_labels[y] = names[idx]
+
+        xlim_max = vmax
+        if has_other:
+            other_imp = float(importance[other_idx].sum())
+            ax.barh(0, other_imp, height=0.68, color=C_OTHER_BAR, linewidth=0, zorder=3)
+            if show_values:
+                _value_label(ax, other_imp, 0)
+            row_labels[0] = f"{len(other_idx)} other features"
+            xlim_max = max(xlim_max, other_imp)
+
+        ax.set_yticks(range(n_rows))
+        ax.set_yticklabels(row_labels)
+        ax.set_ylim(-0.6, n_rows - 0.4)
+        ax.set_xlim(0, (xlim_max or 1.0) * 1.18)
+        ax.grid(axis="x", color=C_GRID, linewidth=0.6, zorder=-1)
+        ax.set_axisbelow(True)
+
+        height = fig.get_figheight()
+        fig.subplots_adjust(
+            top=1.0 - top_in / height,
+            bottom=bottom_in / height,
+            left=0.28,
+            right=0.95,
+        )
+
+        if highlight and len(kept_idx):
+            highlight_row(fig, ax, n_rows - 1)
+
+        if axis_label:
+            fig.text(
+                0.615,  # centre of the plot area, between left=0.28 and right=0.95
+                0.42 / height,
+                axis_label,
+                ha="center",
+                va="bottom",
+                fontsize=9,
                 color=C_LABEL_MUTED,
-                zorder=4,
             )
 
-    vmax = float(importance[kept_idx[0]]) if len(kept_idx) else 0.0
-    for i, idx in enumerate(kept_idx[::-1]):  # ascending importance, largest on top
-        y = base + i
-        frac = importance[idx] / vmax if vmax > 0 else 0.0
-        ax.barh(
-            y, importance[idx], height=0.68, color=_CMAP(frac), linewidth=0, zorder=3
+        finalize(
+            fig,
+            ax,
+            title=title,
+            subtitle=subtitle,
+            source=source,
+            analysis=analysis_text,
         )
-        _value_label(importance[idx], y)
-        row_labels[y] = names[idx]
-
-    bar_values = list(importance[kept_idx])
-    if has_other:
-        other_imp = float(importance[other_idx].sum())
-        ax.barh(0, other_imp, height=0.68, color=C_OTHER_BAR, linewidth=0, zorder=3)
-        _value_label(other_imp, 0)
-        row_labels[0] = f"{len(other_idx)} other features"
-        bar_values.append(other_imp)
-
-    ax.set_yticks(range(n_rows))
-    ax.set_yticklabels(row_labels)
-    ax.set_ylim(-0.6, n_rows - 0.4)
-    ax.set_xlabel("")
-    ax.set_xlim(0, (max(bar_values) if bar_values else 1.0) * 1.18)
-    ax.grid(axis="x", color=C_GRID, linewidth=0.6, zorder=-1)
-    ax.set_axisbelow(True)
-
-    if highlight and len(kept_idx):
-        top_y = n_rows - 1
-        ax.axhspan(top_y - 0.5, top_y + 0.5, color=C_HIGHLIGHT, zorder=-2)
-        ax.get_yticklabels()[top_y].set_fontweight("bold")
-
-    height = fig.get_figheight()
-    fig.subplots_adjust(
-        top=1.0 - top_in / height,
-        bottom=bottom_in / height,
-        left=0.28,
-        right=0.95,
-    )
-
-    if axis_label:
-        fig.text(
-            0.615,
-            0.42 / height,
-            axis_label,
-            ha="center",
-            va="bottom",
-            fontsize=9,
-            color=C_LABEL_MUTED,
-        )
-
-    finalize(
-        fig, ax, title=title, subtitle=subtitle, source=source, analysis=analysis_text
-    )
 
     return fig, ax

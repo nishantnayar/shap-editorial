@@ -16,4 +16,8 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
+      # The gallery PNGs are documentation, so the 500 KB default is too tight:
+      # the before/after composites are full-resolution article assets. Still low
+      # enough to catch a stray dataset or model pickle.
       - id: check-added-large-files
+        args: [--maxkb=1000]

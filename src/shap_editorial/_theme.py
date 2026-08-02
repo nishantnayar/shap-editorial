@@ -35,7 +35,6 @@ C_ROW_GUIDE = "#F0F0F0"  # fainter still: per-row leader lines
 C_LABEL = "#121317"  # near-black, Economist body text
 C_LABEL_MUTED = "#5B6770"  # muted slate for subtitles
 C_SOURCE = "#8A8A8A"
-C_HIGHLIGHT = "#FBEBE8"  # faint warm tint behind the highlighted top-driver row
 C_BG = "#FFFFFF"
 C_OTHER_BAR = "#AEB6BB"  # colour for the collapsed "N other features" row
 
@@ -46,27 +45,16 @@ C_OTHER_BAR = "#AEB6BB"  # colour for the collapsed "N other features" row
 C_POS = "#E3120B"  # positive contribution: pushes the prediction up
 C_NEG = "#7A7A7A"  # negative contribution: pushes the prediction down
 
-# Economist headline/body faces aren't redistributable, so we lead with
-# their names and fall back to a clean, widely-available sans.
-FONT_STACK = [
-    "Econ Sans Cnd",
-    "Officina Sans",
-    "Helvetica Neue",
-    "Arial",
-    "DejaVu Sans",
-]
+# Arial is the workhorse sans available on virtually every machine, so we lead
+# with it (no missing-font warnings for the common case). DejaVu Sans, bundled
+# with matplotlib, is the guaranteed fallback where Arial is absent.
+FONT_STACK = ["Arial", "DejaVu Sans"]
 
 
 def set_theme(*, transparent: bool = False) -> None:
-    """Apply the editorial rcParams globally to matplotlib.
-
-    Parameters
-    ----------
-    transparent : bool
-        If True, the figure and axes backgrounds are transparent and saved
-        figures keep that transparency — useful for dropping a chart onto a
-        coloured slide or a dark web page. Defaults to a white background.
-    """
+    """Apply the editorial rcParams globally to matplotlib. With
+    transparent=True the figure, axes, and saved-figure backgrounds are
+    transparent instead of white (for coloured slides or dark web pages)."""
     bg = "none" if transparent else C_BG
     plt.rcParams.update(
         {
@@ -89,7 +77,13 @@ def set_theme(*, transparent: bool = False) -> None:
             # Economist dot/bar charts let the category labels stand alone —
             # no y-axis tick dashes.
             "ytick.major.size": 0,
-            "font.family": "sans-serif",
+            # Name the real faces here rather than the generic "sans-serif".
+            # A Text artist copies `font.family` when it is created, but a
+            # *generic* name is only resolved against `font.sans-serif` at draw
+            # time — and drawing happens on savefig, after a chart function's
+            # rc context has already exited. Listing the concrete stack means
+            # each artist carries it and renders identically either way.
+            "font.family": FONT_STACK,
             "font.sans-serif": FONT_STACK,
             "font.size": 10,
         }

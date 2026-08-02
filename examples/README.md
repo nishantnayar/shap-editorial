@@ -47,6 +47,7 @@ uv run --no-project --python 3.12 --with-editable . \
 | [`waterfall_gallery.py`](waterfall_gallery.py) | Waterfall across binary, regression, multiclass, few/many features, `show_other`, transparent, and a second model. | [`images/waterfall/`](images/waterfall/) |
 | [`bar_quickstart.py`](bar_quickstart.py) | The canonical single bar chart — global importance for the breast-cancer model. | [`images/bar/hero.png`](images/bar/hero.png) |
 | [`bar_gallery.py`](bar_gallery.py) | Bar across binary, regression, multiclass, few/many features, `show_other`, transparent, and a second model. | [`images/bar/`](images/bar/) |
+| [`beeswarm_comparison.py`](beeswarm_comparison.py) | Side-by-side before/after comparing stock SHAP output with `shap-editorial`'s beeswarm. | [`images/beeswarm/comparison*.png`](images/beeswarm/) |
 
 ## Gallery — `beeswarm`
 
@@ -55,7 +56,7 @@ uv run --no-project --python 3.12 --with-editable . \
 | **Binary classification**<br><img src="images/beeswarm/01_binary_classification.png" width="380"> | **Regression**<br><img src="images/beeswarm/02_regression.png" width="380"> |
 | **Multiclass, few features**<br><img src="images/beeswarm/03_multiclass_few_features.png" width="380"> | **Multiclass, many features**<br><img src="images/beeswarm/04_multiclass_many_features.png" width="380"> |
 | **Aggregate "other" row (`show_other`)**<br><img src="images/beeswarm/05_show_other.png" width="380"> | **Transparent background**<br><img src="images/beeswarm/06_transparent.png" width="380"> |
-| **Gradient boosting (binary)**<br><img src="images/beeswarm/07_gradient_boosting.png" width="380"> | |
+| **Gradient boosting (binary)**<br><img src="images/beeswarm/07_gradient_boosting.png" width="380"> | **Before/after comparison**<br><img src="images/beeswarm/comparison.png" width="380"> |
 
 ## Gallery — `waterfall`
 

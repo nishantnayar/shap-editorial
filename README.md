@@ -116,7 +116,7 @@ for any further tweaks.
 >   can: `fig.savefig("chart.png" | ".jpg" | ".svg" | ".pdf", dpi=200,
 >   bbox_inches="tight")`. Use **SVG/PDF** for crisp, resolution-independent
 >   figures in print/decks; raster (`.png`/`.jpg`) for the web.
-> - **Transparent backgrounds** (both `beeswarm` and `waterfall`): pass
+> - **Transparent backgrounds** (`beeswarm`, `waterfall`, and `bar`): pass
 >   `transparent=True` for slides or dark pages. Save to a format with an alpha
 >   channel — **PNG, SVG, or PDF** — since **JPEG has no transparency** and will
 >   flatten the background to a solid colour.
@@ -126,12 +126,17 @@ for any further tweaks.
 ```bash
 uv run --extra example python examples/beeswarm_quickstart.py   # the hero chart
 uv run --extra example python examples/beeswarm_gallery.py       # many datasets/tasks
+uv run --extra example python examples/waterfall_quickstart.py   # single-prediction waterfall
+uv run --extra example python examples/bar_quickstart.py         # global importance bar chart
+uv run --extra example python examples/beeswarm_comparison.py    # side-by-side before/after vs stock SHAP
 ```
 
 `beeswarm_quickstart.py` trains a `RandomForestClassifier` on scikit-learn's
 breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
 `beeswarm_gallery.py` renders a range of datasets and tasks — see
 [`examples/`](examples/) for the full gallery and how to run it.
+`beeswarm_comparison.py` generates a side-by-side before/after image comparing
+stock SHAP output with `shap-editorial`'s beeswarm.
 
 ## API
 
@@ -140,7 +145,7 @@ breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
 | `beeswarm(...)`       | Global feature-impact summary across all samples. Returns `(fig, ax)`.      |
 | `waterfall(...)`      | Single-prediction explanation — how each feature moves the output from the average prediction to this one. Returns `(fig, ax)`. |
 | `bar(...)`            | Global feature-importance ranking (mean \|SHAP\| per feature). Returns `(fig, ax)`. |
-| `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally (called automatically by chart functions). Pass `transparent=True` for a no-background theme. |
+| `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally. Chart functions apply the theme internally via `rc_context()` without touching your global settings; call `set_theme()` only if you want the style to persist across your own plots. Pass `transparent=True` for a no-background theme. |
 | `ShapEditorialError`  | Raised when the input isn't a usable SHAP explanation. Subclass of `ValueError`. |
 
 ### `beeswarm` signature
@@ -341,9 +346,38 @@ uv sync --extra dev
 uv run python -m pytest tests/ -q
 ```
 
-Tests use a lightweight `FakeExplanation` stand-in rather than importing the
-real `shap` package, so the suite stays fast and dependency-light. Plotting
-tests run headless via matplotlib's `Agg` backend.
+### Testing strategy
+
+What this package ships is **rendered pixels**, but almost everything
+convenient to assert on is in-memory state. Those two can disagree, so testing
+is in three layers, each catching what the one above it cannot see.
+
+| Layer | Run | Speed | Catches | Blind to |
+|---|---|---|---|---|
+| 1. Unit | `pytest tests/` | ~5 s | Validation, ordering, aggregation, error types | Anything only visible once rendered |
+| 2. Integration | `examples/*.py` | ~90 s | Breakage against *real* `shap.Explanation` objects and models | Whether the result looks right |
+| 3. Visual regression | `tools/visual_diff.py` | ~3 min | Fonts, layout, spacing, colour, clipping | Correctness of the numbers |
+
+The unit suite (114 tests) uses a lightweight `FakeExplanation` stand-in rather
+than importing the real `shap`, so it stays fast and dependency-light, and runs
+headless via matplotlib's `Agg` backend. It cannot, however, see anything that
+only appears once a figure is rendered — a chart can pass every assertion while
+coming out in the wrong typeface — which is why layers 2 and 3 exist.
+
+See **[docs/TESTING.md](docs/TESTING.md)** for the full strategy: per-layer
+conventions, the visual-regression procedure, what a new chart type needs, and
+the pre-release checklist.
+
+### Before you commit
+
+```bash
+uv run --extra dev python -m pytest tests/ -q
+uv run ruff format --check .
+uv run ruff check .
+```
+
+Before a release, or after touching theming, layout, or figure lifecycle, add
+layers 2 and 3 as described in [docs/TESTING.md](docs/TESTING.md).
 
 ### Code style
 

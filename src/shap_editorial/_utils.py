@@ -16,21 +16,10 @@ class ShapEditorialError(ValueError):
 
 
 def extract_explanation(shap_values, feature_names=None):
-    """Return (values, data, feature_names) as plain numpy arrays.
-
-    Parameters
-    ----------
-    shap_values : shap.Explanation (or duck-typed equivalent)
-        Must expose `.values` and, ideally, `.data` and `.feature_names`.
-    feature_names : list[str] | None
-        Overrides names found on the explanation object, if given.
-
-    Notes
-    -----
-    For multiclass explanations (values.ndim == 3), the last axis is
-    assumed to be the class axis, and the caller must slice a class
-    before calling this — we raise a clear error instead of guessing.
-    """
+    """Return (values, data, feature_names) as plain numpy arrays from a
+    duck-typed shap.Explanation. `feature_names` overrides the object's own.
+    Multiclass (ndim 3) and non-2D inputs raise ShapEditorialError rather than
+    being guessed at."""
     if not hasattr(shap_values, "values"):
         raise ShapEditorialError(
             "Expected a shap.Explanation object (or something exposing "

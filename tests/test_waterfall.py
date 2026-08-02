@@ -1,37 +1,35 @@
-import sys
-from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")  # headless, no display needed for tests
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from _helpers import FakeExplanation
+from _helpers import FakeExplanation, make_single_explanation
+from matplotlib.colors import to_rgba
 
 import shap_editorial as se
+from shap_editorial._theme import C_NEG, C_POS
 from shap_editorial._utils import ShapEditorialError
+from shap_editorial._waterfall import _fmt
 
 
-def _make_single(n_features=6, seed=0, base=0.5):
-    rng = np.random.default_rng(seed)
-    values = rng.normal(size=n_features)
-    data = rng.uniform(size=n_features)
-    names = [f"feat_{i}" for i in range(n_features)]
-    return FakeExplanation(values, data, names, base_values=base)
+def fig_texts(fig):
+    return [t.get_text() for t in fig.texts]
+
+
+def axes_texts(ax):
+    return [t.get_text() for t in ax.texts]
+
+
+def bar_colors(ax):
+    return [tuple(p.get_facecolor()) for p in ax.patches]
 
 
 def test_waterfall_runs_without_error():
-    fig, ax = se.waterfall(_make_single(), title="One prediction")
-    assert fig is not None
-    assert ax is not None
+    fig, ax = se.waterfall(make_single_explanation(), title="One prediction")
+    assert ax.get_figure() is fig
+    assert len(ax.get_yticklabels()) == 6
 
 
 def test_waterfall_max_display_aggregates_the_rest():
-    exp = _make_single(n_features=8)
+    exp = make_single_explanation(n_features=8)
     fig, ax = se.waterfall(exp, max_display=3)
     # 3 features + 1 "other features" row = 4 rows
     labels = [t.get_text() for t in ax.get_yticklabels()]
@@ -40,13 +38,12 @@ def test_waterfall_max_display_aggregates_the_rest():
 
 
 def test_waterfall_no_other_row_when_features_fit():
-    exp = _make_single(n_features=3)
-    fig, ax = se.waterfall(exp, max_display=5)
+    fig, ax = se.waterfall(make_single_explanation(n_features=3), max_display=5)
     assert len(ax.get_yticklabels()) == 3
 
 
 def test_waterfall_show_other_false_omits_aggregate():
-    exp = _make_single(n_features=8)
+    exp = make_single_explanation(n_features=8)
     fig, ax = se.waterfall(exp, max_display=3, show_other=False)
     labels = [t.get_text() for t in ax.get_yticklabels()]
     assert len(labels) == 3  # only the top 3, no aggregate row
@@ -89,6 +86,11 @@ def test_waterfall_raises_without_base_values():
         se.waterfall(exp)
 
 
+def test_waterfall_raises_on_zero_max_display():
+    with pytest.raises(ShapEditorialError, match="max_display must be at least 1"):
+        se.waterfall(make_single_explanation(), max_display=0)
+
+
 def test_waterfall_labels_plain_by_default():
     values = np.array([0.3, -0.2, 0.1])
     data = np.array([12.0, 3.5, 7.0])
@@ -106,3 +108,110 @@ def test_waterfall_show_values_appends_feature_value():
     fig, ax = se.waterfall(exp, show_values=True)
     labels = [t.get_text() for t in ax.get_yticklabels()]
     assert any("=" in lbl for lbl in labels)
+
+
+def test_waterfall_show_values_without_data_stays_plain():
+    exp = FakeExplanation(
+        np.array([0.3, -0.2]), data=None, feature_names=["x", "y"], base_values=0.0
+    )
+    fig, ax = se.waterfall(exp, show_values=True)
+    labels = [t.get_text() for t in ax.get_yticklabels()]
+    assert all("=" not in lbl for lbl in labels)
+
+
+def test_waterfall_all_positive_contributions_are_red():
+    exp = FakeExplanation(
+        np.array([0.4, 0.3, 0.2]), feature_names=["a", "b", "c"], base_values=0.1
+    )
+    fig, ax = se.waterfall(exp, highlight=False)
+    assert bar_colors(ax) == [to_rgba(C_POS)] * 3
+
+
+def test_waterfall_all_negative_contributions_are_grey():
+    exp = FakeExplanation(
+        np.array([-0.4, -0.3, -0.2]), feature_names=["a", "b", "c"], base_values=0.9
+    )
+    fig, ax = se.waterfall(exp, highlight=False)
+    assert bar_colors(ax) == [to_rgba(C_NEG)] * 3
+
+
+def test_waterfall_all_zero_contributions_drops_duplicate_endpoint_label():
+    # base == fx, so the two endpoint labels would print on top of each other.
+    exp = FakeExplanation(np.zeros(3), feature_names=["a", "b", "c"], base_values=0.5)
+    fig, ax = se.waterfall(exp)
+    texts = axes_texts(ax)
+    assert any("This prediction" in t for t in texts)
+    assert not any("Average prediction" in t for t in texts)
+
+
+def test_waterfall_distinct_endpoints_keep_both_labels():
+    exp = FakeExplanation(
+        np.array([0.5, 0.3]), feature_names=["a", "b"], base_values=0.1
+    )
+    fig, ax = se.waterfall(exp)
+    texts = axes_texts(ax)
+    assert any("This prediction" in t for t in texts)
+    assert any("Average prediction" in t for t in texts)
+
+
+def test_waterfall_max_display_one_draws_no_connectors():
+    exp = make_single_explanation(n_features=5)
+    fig, ax = se.waterfall(exp, max_display=1, show_other=False)
+    assert len(ax.get_yticklabels()) == 1
+    assert len(ax.lines) == 2  # the two endpoint reference lines, no connectors
+
+
+def test_waterfall_analysis_false_omits_line():
+    fig, ax = se.waterfall(make_single_explanation(), analysis=False)
+    assert not any("largest effect" in t for t in fig_texts(fig))
+
+
+def test_waterfall_custom_analysis_string_is_used():
+    fig, ax = se.waterfall(make_single_explanation(), analysis="Bespoke takeaway.")
+    assert "Bespoke takeaway." in fig_texts(fig)
+
+
+def test_waterfall_accepts_base_values_as_array():
+    exp = FakeExplanation(
+        np.array([0.2, -0.1]), feature_names=["a", "b"], base_values=np.array([0.4])
+    )
+    fig, ax = se.waterfall(exp)
+    assert any("0.5" in t for t in axes_texts(ax))  # 0.4 + 0.2 - 0.1
+
+
+def test_waterfall_draws_onto_given_axes():
+    fig, ax = plt.subplots()
+    fig2, ax2 = se.waterfall(make_single_explanation(), ax=ax)
+    assert fig2 is fig
+    assert ax2 is ax
+
+
+def test_waterfall_does_not_leak_rcparams():
+    import matplotlib as mpl
+
+    before = mpl.rcParams["axes.labelsize"]
+    se.waterfall(make_single_explanation(), transparent=True)
+    assert mpl.rcParams["axes.labelsize"] == before
+    assert mpl.rcParams["savefig.transparent"] is False
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (3.0, "3"),
+        (-7.0, "-7"),
+        (3.5, "3.5"),
+        (0.000123456, "0.000123"),
+        (1e7, "1e+07"),  # too large for the integer shortcut
+    ],
+)
+def test_fmt_numeric(value, expected):
+    assert _fmt(value) == expected
+
+
+def test_fmt_passes_through_non_numeric():
+    assert _fmt("categorical") == "categorical"
+
+
+def test_fmt_passes_through_nan():
+    assert _fmt(float("nan")) == "nan"
