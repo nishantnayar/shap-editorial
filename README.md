@@ -22,6 +22,12 @@
 
 <p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style title block, an auto-generated takeaway line, a highlighted top driver, directional axis cues, and an explainable grey→red colour scale, ready to publish.</em></p>
 
+<p align="center">
+  <img src="examples/images/waterfall/hero.png" alt="Editorial waterfall plot of a single SHAP prediction" width="720">
+</p>
+
+<p align="center"><em>…and one <code>waterfall()</code> call to explain a single prediction — same red tab and grey→red palette, plain-language endpoints (<em>Average prediction → This prediction</em>, no <code>E[f(x)]</code>/<code>f(x)</code> jargon), and an auto takeaway.</em></p>
+
 ## What it is
 
 `shap-editorial` is a thin **styling and layout layer** on top of
