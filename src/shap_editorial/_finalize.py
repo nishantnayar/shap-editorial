@@ -7,13 +7,14 @@ from matplotlib.patches import Rectangle
 from ._theme import C_ECON_RED, C_LABEL, C_LABEL_MUTED, C_SOURCE
 
 
-def finalize(fig, ax, *, title=None, subtitle=None, source=None):
+def finalize(fig, ax, *, title=None, subtitle=None, source=None, analysis=None):
     """Add the Economist-style title block above the axes and a source line below.
 
-    Draws the signature red corner tab, then a bold left-aligned title and a
-    muted subtitle beneath it, then an optional source line at the bottom left.
-    Positions are figure-relative so this behaves consistently regardless of
-    figure size. Call this last, after all plotting is done.
+    Draws the signature red corner tab, then a bold left-aligned title, a muted
+    subtitle, and an optional darker analytical takeaway line beneath it, then
+    an optional source line at the bottom left. Positions are figure-relative so
+    this behaves consistently regardless of figure size. Call this last, after
+    all plotting is done.
 
     The title block is set flush-left with the whole graphic (Economist
     convention), not indented to the plot area, so it sits above the y-axis

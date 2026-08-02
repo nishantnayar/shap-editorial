@@ -20,7 +20,7 @@
   <img src="examples/beeswarm_output.png" alt="Editorial beeswarm plot of SHAP values" width="720">
 </p>
 
-<p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style red tab, title block, house palette, and a horizontal colour key, ready to publish.</em></p>
+<p align="center"><em>One <code>beeswarm()</code> call — <em>The Economist</em>-style red tab, title block, an explainable grey→red colour scale, and a horizontal colour key, ready to publish.</em></p>
 
 ## What it is
 
@@ -45,7 +45,7 @@ manual rework in another tool. This package removes that step.
 | ---------------------- | ----------------------------- | ----------------------------------------- |
 | Typography             | matplotlib defaults           | Economist-style font stack, sized hierarchy |
 | Title / subtitle       | none / jargon axis label      | Red corner tab, bold flush-left title, plain-language subtitle |
-| Colour palette         | SHAP red/blue                 | *The Economist*'s house blue → red          |
+| Colour scale           | SHAP red/blue                 | Explainable grey → red ("redder = higher"), high values pop |
 | Colour key             | vertical bar, rotated label   | Horizontal key, horizontal labels           |
 | Source / attribution   | none                          | Optional source line                      |
 | Cross-chart consistency| varies by plot type           | Shared theme + finalize layer             |
@@ -111,7 +111,7 @@ computes real SHAP values, and writes `examples/beeswarm_output.png`.
 | Object                | Description                                                                 |
 | --------------------- | --------------------------------------------------------------------------- |
 | `beeswarm(...)`       | Global feature-impact summary. Returns `(fig, ax)`.                         |
-| `set_theme()`         | Apply the editorial matplotlib `rcParams` globally (called automatically by chart functions). |
+| `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally (called automatically by chart functions). Pass `transparent=True` for a no-background theme. |
 | `ShapEditorialError`  | Raised when the input isn't a usable SHAP explanation. Subclass of `ValueError`. |
 
 ### `beeswarm` signature
@@ -126,6 +126,8 @@ beeswarm(
     source: str | None = None,
     feature_names=None,
     figsize=(8, 5.5),
+    show_other: bool = False,
+    transparent: bool = False,
     ax=None,
 )
 ```
@@ -133,12 +135,23 @@ beeswarm(
 - **`shap_values`** — a `shap.Explanation` (or any object exposing `.values`,
   `.data`, and optionally `.feature_names`). Must be single-output
   (binary classification or regression).
-- **`max_display`** — features shown individually before the rest collapse into
-  a single "N other features" row (summed per sample, preserving the additive
-  property).
+- **`max_display`** — number of top features (by mean |SHAP|) to show.
+- **`show_other`** — when `True`, collapse the remaining features into a single
+  "N other features" row at the bottom (per-sample sum, preserving the additive
+  property). Defaults to `False` — just the top `max_display`. That aggregate
+  row can't carry the colour scale (it sums across features), so it renders flat
+  grey; it's opt-in for completeness.
 - **`title` / `subtitle` / `source`** — the editorial text stack. Pass `None`
   to omit any of them.
 - **`feature_names`** — override names on the explanation object.
+- **`transparent`** — render and save with a transparent background instead of
+  white, for coloured slides or dark web pages. The saved PNG keeps the
+  transparency:
+
+  ```python
+  fig, ax = se.beeswarm(explanation, title="…", transparent=True)
+  fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")  # transparent
+  ```
 - **`ax`** — draw onto an existing axes instead of creating a new figure.
 
 ## Design principles
@@ -151,6 +164,10 @@ beeswarm(
   than it helps.
 - **Self-contained theme.** Palette and font stack live in one module; no
   dependency on any external charting-style package.
+- **Readability over convention.** A grey→red scale ("redder = higher value")
+  replaces SHAP's blue/red so the low-value mass recedes and high values pop;
+  points are drawn in |impact| order so the ones that matter aren't buried; the
+  aggregate "other features" row sits subdued at the bottom.
 - **Public API is the chart functions.** Everything else is a private module
   (leading underscore) and not guaranteed stable.
 

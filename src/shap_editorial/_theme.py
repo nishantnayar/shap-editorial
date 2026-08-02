@@ -19,16 +19,23 @@ import matplotlib.pyplot as plt
 # -- Palette -----------------------------------------------------------
 # The Economist's house colours. The low->high feature-value scale runs
 # from Economist blue through a light neutral to Economist red.
-C_ECON_RED = "#E3120B"   # the brand red — used for the corner tab
-C_LOW = "#006BA2"        # Economist blue: low feature value
-C_HIGH = "#E3120B"       # Economist red: high feature value
-C_MID = "#D9D9D9"        # neutral light grey: mid feature value
+C_ECON_RED = "#E3120B"   # the brand red — also the high end of the scale
+# Grey -> red sequential feature-value scale: "redder = higher value". Low
+# values stay neutral grey and recede; high values pop in Economist red. This
+# separates by both hue and lightness, so it stays colour-blind safe (unlike a
+# red/green scale) and reuses the brand red for a cohesive look.
+C_LOW = "#DBDBDB"        # neutral light grey: low feature value (recedes)
+C_MID = "#EA9A8B"        # muted salmon: mid feature value
+C_HIGH = "#E3120B"       # Economist red: high feature value (draws the eye)
 
 C_SPINE = "#2B2B2B"
-C_GRID = "#D7D7D7"
+C_ZERO = "#8C8C8C"        # muted grey zero reference — visible but subordinate to the data
+C_GRID = "#E8E8E8"        # faint value gridlines
+C_ROW_GUIDE = "#F0F0F0"   # fainter still: per-row leader lines
 C_LABEL = "#121317"        # near-black, Economist body text
 C_LABEL_MUTED = "#5B6770"  # muted slate for subtitles
 C_SOURCE = "#8A8A8A"
+C_HIGHLIGHT = "#FBEBE8"   # faint warm tint behind the highlighted top-driver row
 C_BG = "#FFFFFF"
 C_OTHER_BAR = "#AEB6BB"    # colour for the collapsed "N other features" row
 
@@ -37,13 +44,23 @@ C_OTHER_BAR = "#AEB6BB"    # colour for the collapsed "N other features" row
 FONT_STACK = ["Econ Sans Cnd", "Officina Sans", "Helvetica Neue", "Arial", "DejaVu Sans"]
 
 
-def set_theme() -> None:
-    """Apply the editorial rcParams globally to matplotlib."""
+def set_theme(*, transparent: bool = False) -> None:
+    """Apply the editorial rcParams globally to matplotlib.
+
+    Parameters
+    ----------
+    transparent : bool
+        If True, the figure and axes backgrounds are transparent and saved
+        figures keep that transparency — useful for dropping a chart onto a
+        coloured slide or a dark web page. Defaults to a white background.
+    """
+    bg = "none" if transparent else C_BG
     plt.rcParams.update(
         {
-            "figure.facecolor": C_BG,
-            "savefig.facecolor": C_BG,
-            "axes.facecolor": C_BG,
+            "figure.facecolor": bg,
+            "savefig.facecolor": bg,
+            "savefig.transparent": transparent,
+            "axes.facecolor": bg,
             "axes.edgecolor": C_SPINE,
             "axes.linewidth": 0.8,
             "axes.spines.top": False,
@@ -56,6 +73,9 @@ def set_theme() -> None:
             "ytick.color": C_LABEL,
             "xtick.labelsize": 9,
             "ytick.labelsize": 10,
+            # Economist dot/bar charts let the category labels stand alone —
+            # no y-axis tick dashes.
+            "ytick.major.size": 0,
             "font.family": "sans-serif",
             "font.sans-serif": FONT_STACK,
             "font.size": 10,

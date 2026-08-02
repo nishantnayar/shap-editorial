@@ -33,8 +33,18 @@ def test_beeswarm_runs_without_error():
 def test_beeswarm_respects_max_display():
     exp = _make_explanation(n_features=8)
     fig, ax = se.beeswarm(exp, max_display=3)
+    # By default only the top max_display features are shown (no "other" row).
+    assert len(ax.get_yticklabels()) == 3
+
+
+def test_beeswarm_show_other_adds_bottom_row():
+    exp = _make_explanation(n_features=8)
+    fig, ax = se.beeswarm(exp, max_display=3, show_other=True)
     # 3 kept features + 1 collapsed "other" row = 4 y-ticks
-    assert len(ax.get_yticklabels()) == 4
+    labels = [t.get_text() for t in ax.get_yticklabels()]
+    assert len(labels) == 4
+    # The aggregate row sits at the bottom (first y-tick).
+    assert labels[0] == "5 other features"
 
 
 def test_beeswarm_no_other_row_when_features_fit():

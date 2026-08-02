@@ -11,16 +11,51 @@ from ._finalize import finalize
 from ._theme import (
     C_GRID,
     C_HIGH,
+    C_HIGHLIGHT,
     C_LABEL_MUTED,
     C_LOW,
     C_MID,
     C_OTHER_BAR,
-    C_SPINE,
+    C_ROW_GUIDE,
+    C_ZERO,
     set_theme,
 )
 from ._utils import extract_explanation, top_feature_order
 
-_CMAP = LinearSegmentedColormap.from_list("shap_editorial", [C_LOW, C_MID, C_HIGH])
+# Weighted stops: grey holds through the low half of the scale, and red is
+# reserved for the top ~20% — so only genuinely high feature values pop and
+# everything else recedes to grey.
+_CMAP = LinearSegmentedColormap.from_list(
+    "shap_editorial",
+    [(0.0, C_LOW), (0.5, C_LOW), (0.8, C_MID), (1.0, C_HIGH)],
+)
+
+
+def _analysis_line(values, data, names, kept_idx):
+    """One-sentence takeaway derived from the top driver's SHAP pattern.
+
+    Looks at the strongest feature (highest mean |SHAP|) and reports the
+    direction of its effect from the correlation between each sample's feature
+    value and its SHAP value — i.e. it narrates the colour<->position pattern
+    already visible in the plot. Returns None when no honest statement can be
+    made (no data, or a flat/degenerate feature).
+    """
+    if data is None or len(kept_idx) == 0:
+        return None
+    top = kept_idx[0]
+    fv = np.asarray(data[:, top], dtype=float)
+    sv = np.asarray(values[:, top], dtype=float)
+    mask = np.isfinite(fv) & np.isfinite(sv)
+    if mask.sum() < 3 or np.std(fv[mask]) < 1e-12 or np.std(sv[mask]) < 1e-12:
+        return None
+    r = float(np.corrcoef(fv[mask], sv[mask])[0, 1])
+    if not np.isfinite(r):
+        return None
+    name = names[top]
+    if abs(r) < 0.15:
+        return f"“{name}” is the strongest driver, though its effect direction is mixed."
+    direction = "higher" if r > 0 else "lower"
+    return f"“{name}” is the strongest driver: higher values push the prediction {direction}."
 
 
 def _row_jitter(n, row_height=0.7, rng=None):
@@ -41,6 +76,10 @@ def beeswarm(
     source: str | None = None,
     feature_names=None,
     figsize=(8, 5.5),
+    show_other: bool = False,
+    analysis: bool | str = True,
+    highlight: bool = True,
+    transparent: bool = False,
     ax=None,
 ):
     """Render an editorial-style beeswarm plot of SHAP values.
@@ -52,8 +91,21 @@ def beeswarm(
         `explainer(X_test)`. Must be a single-output (binary/regression)
         explanation — for multiclass models, slice a class first.
     max_display : int
-        Number of individual features to show before collapsing the
-        remainder into a single "N other features" row.
+        Number of top features (by mean |SHAP|) to show.
+    show_other : bool
+        If True, collapse every feature beyond `max_display` into a single
+        "N other features" row at the bottom (the per-sample sum of their
+        SHAP values, preserving the additive property). Defaults to False:
+        just show the top `max_display` features. The aggregate row can't
+        carry the feature-value colour scale (it sums across features), so
+        it renders in a flat grey — kept as an opt-in for completeness.
+    analysis : bool | str
+        Editorial takeaway line under the title. True (default) auto-generates
+        a one-sentence insight from the top driver's SHAP pattern; pass a
+        string to supply your own; pass False to omit it.
+    highlight : bool
+        If True (default), draw a subtle highlight band behind the top-driver
+        row and bold its label, so the eye lands on the strongest feature.
     title, subtitle, source : str | None
         Editorial title stack. `subtitle` defaults to a plain-language
         description of what the x-axis means; pass None to omit it.
@@ -61,6 +113,10 @@ def beeswarm(
         Overrides names on the explanation object, if provided.
     figsize : tuple
         Only used if `ax` is None (a new figure is created).
+    transparent : bool
+        If True, render (and save) with a transparent background instead of
+        white — useful for coloured slides or dark web pages. Ignored when
+        drawing onto an existing `ax` you control.
     ax : matplotlib.axes.Axes | None
         Draw onto an existing axes instead of creating a new figure.
 
@@ -68,7 +124,7 @@ def beeswarm(
     -------
     (fig, ax) : the created or given figure and axes.
     """
-    set_theme()
+    set_theme(transparent=transparent)
 
     values, data, names = extract_explanation(shap_values, feature_names)
     n_samples, n_features = values.shape
@@ -82,7 +138,8 @@ def beeswarm(
         )
 
     kept_idx, other_idx = top_feature_order(values, max_display)
-    n_rows = len(kept_idx) + (1 if len(other_idx) else 0)
+    has_other = show_other and len(other_idx) > 0
+    n_rows = len(kept_idx) + (1 if has_other else 0)
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -100,51 +157,85 @@ def beeswarm(
             return np.full_like(col, 0.5)
         return (col - lo) / (hi - lo)
 
-    row_labels = []
-    for row, feat_idx in enumerate(kept_idx[::-1]):  # largest impact at top
-        y = row
+    # Reserve the bottom row (y=0) for the aggregate when present, so the
+    # named features sit above it with largest impact at the top.
+    base = 1 if has_other else 0
+    row_labels = [""] * n_rows
+
+    for i, feat_idx in enumerate(kept_idx[::-1]):  # ascending impact, largest at top
+        y = base + i
         v = values[:, feat_idx]
         colour_val = _norm(data[:, feat_idx])
         jitter = _row_jitter(n_samples, rng=rng)
+        # Draw low-impact points first and high-impact ones last, so the
+        # points that matter most sit on top instead of being buried under
+        # the dense low-impact cluster near zero.
+        order = np.argsort(np.abs(v))
         ax.scatter(
-            v,
-            np.full(n_samples, y) + jitter,
-            c=colour_val,
+            v[order],
+            np.full(n_samples, y) + jitter[order],
+            c=colour_val[order],
             cmap=_CMAP,
             vmin=0,
             vmax=1,
             s=14,
             linewidths=0,
-            alpha=0.85,
+            alpha=0.6,
         )
-        row_labels.append(names[feat_idx])
+        row_labels[y] = names[feat_idx]
 
-    if len(other_idx):
-        y = len(kept_idx)
+    if has_other:
         # Sum (not mean) of the excluded features' SHAP values per sample,
         # so the row still reflects each sample's true net contribution
-        # from everything not individually displayed.
+        # from everything not individually displayed. It sits at the bottom
+        # in a subdued grey — a residual, not a headline row.
         other_sum = values[:, other_idx].sum(axis=1)
         jitter = _row_jitter(n_samples, rng=rng)
+        order = np.argsort(np.abs(other_sum))
         ax.scatter(
-            other_sum,
-            np.full(n_samples, y) + jitter,
+            other_sum[order],
+            np.full(n_samples, 0) + jitter[order],
             c=C_OTHER_BAR,
             s=12,
             linewidths=0,
-            alpha=0.6,
+            alpha=0.5,
         )
-        row_labels.append(f"{len(other_idx)} other features")
+        row_labels[0] = f"{len(other_idx)} other features"
 
-    ax.axvline(0, color=C_SPINE, linewidth=0.9, zorder=0)
+    # Faint per-row guide lines tie each label to its cloud of points. Drawn
+    # behind the points (low zorder), so they read as a subtle leader in the
+    # empty gutter and are occluded where the points are dense — restoring the
+    # label<->row connection lost when the tick dashes were removed.
+    for r in range(n_rows):
+        ax.axhline(r, color=C_ROW_GUIDE, linewidth=0.8, zorder=-2)
+
+    # Zero reference: a muted grey line drawn just under the points, so it
+    # marks x=0 clearly without slashing across (or competing with) the data.
+    ax.axvline(0, color=C_ZERO, linewidth=1.0, zorder=0.5)
     ax.set_yticks(range(n_rows))
     ax.set_yticklabels(row_labels)
     ax.set_ylim(-0.6, n_rows - 0.4)
     ax.set_xlabel("")
-    ax.grid(axis="x", color=C_GRID, linewidth=0.7, zorder=-1)
+    ax.grid(axis="x", color=C_GRID, linewidth=0.6, zorder=-1)
     ax.set_axisbelow(True)
 
-    fig.subplots_adjust(top=0.80, left=0.28, right=0.95, bottom=0.10)
+    # Highlight the top-driver row (largest impact, always the top row) with a
+    # faint band and a bold label, so the eye lands on the strongest feature.
+    if highlight and len(kept_idx):
+        top_y = n_rows - 1
+        ax.axhspan(top_y - 0.5, top_y + 0.5, color=C_HIGHLIGHT, zorder=-3)
+        ax.get_yticklabels()[top_y].set_fontweight("bold")
+
+    analysis_text = None
+    if analysis:
+        analysis_text = (
+            analysis if isinstance(analysis, str)
+            else _analysis_line(values, data, names, kept_idx)
+        )
+
+    # Leave a little more headroom above the plot when a takeaway line is shown.
+    top = 0.77 if analysis_text else 0.80
+    fig.subplots_adjust(top=top, left=0.28, right=0.95, bottom=0.10)
 
     # Horizontal colour key at the top: Low -> High feature value. A
     # horizontal bar with horizontal labels reads better than a vertical
@@ -159,6 +250,6 @@ def beeswarm(
     cbar.outline.set_visible(False)
     cax.set_title("Feature value", fontsize=8.5, color=C_LABEL_MUTED, loc="left", pad=4)
 
-    finalize(fig, ax, title=title, subtitle=subtitle, source=source)
+    finalize(fig, ax, title=title, subtitle=subtitle, source=source, analysis=analysis_text)
 
     return fig, ax

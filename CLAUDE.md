@@ -65,17 +65,30 @@ Design choices worth knowing:
   to slice a class first (e.g. `shap_values[..., class_index]`). Do not
   add "helpful" auto-slicing — silently picking a class is more likely to
   mislead than help.
-- **"Other features" row uses `.sum(axis=1)` per sample, not mean.**
-  This preserves the additive property (per-sample total still adds up
-  to something meaningful) — an earlier draft used
+- **Top-N by default; the "other features" row is opt-in (`show_other=True`).**
+  By default the beeswarm shows only the top `max_display` features — a
+  summed-SHAP-across-many-features quantity isn't something most readers
+  can interpret, and the aggregate row can't carry the feature-value
+  colour scale (so it renders flat grey, inconsistent with the rest).
+  When enabled, it renders at the **bottom** in subdued grey — a residual,
+  never above the named features.
+- **When shown, the "other features" row uses `.sum(axis=1)` per sample,
+  not mean.** This preserves the additive property (per-sample total still
+  adds up to something meaningful) — an earlier draft used
   `mean(|values|) * sign(mean(values))`, which is not a meaningful
   quantity and was a real bug caught during initial testing. Don't
   reintroduce a mean-based aggregation here.
+- **Points are drawn in ascending |SHAP| order** so the highest-impact
+  points render on top instead of being buried under the dense low-impact
+  cluster near zero. Opacity is low (~0.6) so that central cluster reads
+  as a tone, not a solid mass.
 - **Colour scale is per-feature min-max normalized** (`_norm()` inside
-  `_beeswarm.py`), matching SHAP's own convention, but using *The
-  Economist*'s house palette (Economist blue `#006BA2` → neutral →
-  Economist red `#E3120B`) so output doesn't look like an unstyled
-  `shap.summary_plot()`.
+  `_beeswarm.py`), matching SHAP's own convention, but is a **grey → red
+  sequential** scale ("redder = higher feature value"): low values stay
+  neutral grey and recede, high values pop in Economist red. This was a
+  deliberate move away from SHAP's blue/red (blue overwhelmed the plot)
+  and away from a red/green scale (colour-blind unsafe); grey→red
+  separates by both hue and lightness. Don't reintroduce blue here.
 - **Theme is modelled on *The Economist*'s data-journalism style** and is
   self-contained — no dependency on any other chart-styling package.
   Palette, font stack, and the signature red corner tab live in
