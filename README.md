@@ -14,6 +14,14 @@
   <img src="https://img.shields.io/badge/status-alpha-orange" alt="Alpha">
 </p>
 
+<p align="center">
+  <a href="docs/API.md">API</a> ·
+  <a href="examples/">Examples</a> ·
+  <a href="docs/DEVELOPMENT.md">Development</a> ·
+  <a href="docs/TESTING.md">Testing</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
 ---
 
 <p align="center">
@@ -140,10 +148,9 @@ for any further tweaks.
 >   can: `fig.savefig("chart.png" | ".jpg" | ".svg" | ".pdf", dpi=200,
 >   bbox_inches="tight")`. Use **SVG/PDF** for crisp, resolution-independent
 >   figures in print/decks; raster (`.png`/`.jpg`) for the web.
-> - **Transparent backgrounds** (`beeswarm`, `waterfall`, and `bar`): pass
->   `transparent=True` for slides or dark pages. Save to a format with an alpha
->   channel - **PNG, SVG, or PDF** - since **JPEG has no transparency** and will
->   flatten the background to a solid colour.
+> - **Transparent backgrounds:** pass `transparent=True` for slides or dark
+>   pages. Save to a format with an alpha channel - **PNG, SVG, or PDF** -
+>   since **JPEG has no transparency** and will flatten the background.
 
 ### Run the real end-to-end examples
 
@@ -156,187 +163,27 @@ uv run --extra example python examples/scatter_quickstart.py     # one feature's
 uv run --extra example python examples/beeswarm_comparison.py    # side-by-side before/after vs stock SHAP
 ```
 
-`beeswarm_quickstart.py` trains a `RandomForestClassifier` on scikit-learn's
-breast-cancer dataset and writes `examples/images/beeswarm/hero.png`.
-`beeswarm_gallery.py` renders a range of datasets and tasks - see
-[`examples/`](examples/) for the full gallery and how to run it.
-`beeswarm_comparison.py` generates a side-by-side before/after image comparing
-stock SHAP output with `shap-editorial`'s beeswarm.
+See [`examples/`](examples/) for the full gallery and how to run it.
 
 ## API
 
-| Object                | Description                                                                 |
-| --------------------- | --------------------------------------------------------------------------- |
-| `beeswarm(...)`       | Global feature-impact summary across all samples. Returns `(fig, ax)`.      |
-| `waterfall(...)`      | Single-prediction explanation - how each feature moves the output from the average prediction to this one. Returns `(fig, ax)`. |
-| `bar(...)`            | Global feature-importance ranking (mean \|SHAP\| per feature). Returns `(fig, ax)`. |
-| `scatter(...)`        | Dependence plot for one feature: its value vs its SHAP value, optionally coloured by a second feature. Returns `(fig, ax)`. |
-| `set_theme(transparent=False)` | Apply the Economist-style matplotlib `rcParams` globally. Chart functions apply the theme internally via `rc_context()` without touching your global settings; call `set_theme()` only if you want the style to persist across your own plots. Pass `transparent=True` for a no-background theme. |
-| `ShapEditorialError`  | Raised when the input isn't a usable SHAP explanation. Subclass of `ValueError`. |
+| Object | Description |
+| --- | --- |
+| `beeswarm(...)` | Global feature-impact summary across all samples. Returns `(fig, ax)`. |
+| `waterfall(...)` | Single-prediction explanation. Returns `(fig, ax)`. |
+| `bar(...)` | Global feature-importance ranking (mean \|SHAP\|). Returns `(fig, ax)`. |
+| `scatter(...)` | One feature's value vs its SHAP value, optionally coloured by another. Returns `(fig, ax)`. |
+| `set_theme(...)` | Apply the editorial matplotlib theme globally (optional; charts use it via `rc_context`). |
+| `ShapEditorialError` | Raised when the input isn't a usable SHAP explanation. |
 
-### `beeswarm` signature
-
-```python
-beeswarm(
-    shap_values,
-    *,
-    max_display: int = 10,
-    title: str | None = None,
-    subtitle: str | None = None,
-    source: str | None = None,
-    feature_names=None,
-    figsize=None,
-    show_other: bool = False,
-    analysis: bool | str = True,
-    highlight: bool = True,
-    direction_labels: bool | tuple[str, str] = True,
-    transparent: bool = False,
-    ax=None,
-)
-```
-
-- **`shap_values`** - a `shap.Explanation` (or any object exposing `.values`,
-  `.data`, and optionally `.feature_names`). Must be single-output
-  (binary classification or regression).
-- **`max_display`** - number of top features (by mean |SHAP|) to show.
-- **`show_other`** - when `True`, collapse the remaining features into a single
-  "N other features" row at the bottom (per-sample sum, preserving the additive
-  property). Defaults to `False` - just the top `max_display`. That aggregate
-  row can't carry the colour scale (it sums across features), so it renders flat
-  grey; it's opt-in for completeness.
-- **`analysis`** - the editorial takeaway line under the title. `True` (default)
-  auto-generates a one-sentence insight from the top driver's SHAP pattern
-  (e.g. *"'worst concave points' is the strongest driver: higher values push the
-  prediction lower"*); pass a string for your own, or `False` to omit. The
-  auto text only narrates the pattern already in the plot - no new computation.
-- **`highlight`** - when `True` (default), draw a subtle band behind the
-  top-driver row and bold its label so the eye lands on the strongest feature.
-- **`direction_labels`** - small labels under the x-axis for "which side means
-  what". `True` (default) shows the generic *"← pushes prediction lower /
-  pushes prediction higher →"*; pass a `(left, right)` tuple for domain-specific
-  wording (e.g. `("← toward benign", "toward malignant →")`), or `False` to omit.
-- **`title` / `subtitle` / `source`** - the editorial text stack. Pass `None`
-  to omit any of them.
-- **`feature_names`** - override names on the explanation object.
-- **`transparent`** - render and save with a transparent background instead of
-  white, for coloured slides or dark web pages. The saved PNG keeps the
-  transparency:
-
-  ```python
-  fig, ax = se.beeswarm(explanation, title="…", transparent=True)
-  fig.savefig("beeswarm.png", dpi=200, bbox_inches="tight")  # transparent
-  ```
-- **`ax`** - draw onto an existing axes instead of creating a new figure.
-
-### `waterfall` - explain one prediction
-
-Where `beeswarm` summarises the whole dataset, `waterfall` explains a **single
-prediction**: red bars push the output up, grey bars push it down, and they sum
-(with the baseline) from the average prediction to this one - the endpoints are
-labelled in plain language, not `E[f(x)]`/`f(x)`.
+Signatures, parameters, and chart-specific notes:
+**[docs/API.md](docs/API.md)**.
 
 ```python
-expl = explainer(X)  # a shap.Explanation
-fig, ax = se.waterfall(
-    expl[..., 0][0],  # class 0, instance 0 → 1-D values + base value
-    title="Why this case was predicted malignant",
-)
-```
-
-```python
-waterfall(
-    shap_values,
-    *,
-    max_display: int = 10,
-    title: str | None = None,
-    subtitle: str | None = None,
-    source: str | None = None,
-    feature_names=None,
-    figsize=None,
-    show_other: bool = True,
-    analysis: bool | str = True,
-    highlight: bool = True,
-    show_values: bool = False,
-    transparent: bool = False,
-    ax=None,
-)
-```
-
-- **`shap_values`** - a **single-instance** explanation (e.g. `explainer(X)[0]`)
-  exposing `.values` (1-D), `.base_values` (the average prediction), and ideally
-  `.data`. Multiclass, multi-sample, or missing-`base_values` inputs raise
-  `ShapEditorialError` - it never guesses.
-- **`max_display`** - top features shown individually.
-- **`show_other`** - collapse the rest into a single "N other features" bar so
-  the bars reconcile from the average prediction to this one. Defaults to `True`
-  here (unlike `beeswarm`'s `False`), because that reconciliation *is* the
-  waterfall - set `False` to show only the top features (the bars then stop
-  short of "This prediction", the gap being the hidden contributions).
-- **`show_values`** - append this instance's feature value to each label
-  (`name = value`). Off by default (a raw, unitless value next to the
-  contribution tends to confuse).
-- **`analysis` / `highlight` / `transparent` / `title` / `subtitle` / `source`** -
-  behave as in `beeswarm`. The auto takeaway names the largest contribution and
-  its direction for this instance.
-
-### `bar` - global importance ranking
-
-The simplest of the three: each bar is a feature's **mean absolute SHAP value**
-across all samples, a single direction-free measure of importance. Use it when
-you want a clean ranking rather than the beeswarm's full distribution. Unlike
-`beeswarm`, `bar` does not need `.data`.
-
-```python
+fig, ax = se.waterfall(expl[..., 0][0], title="Why this case was predicted malignant")
 fig, ax = se.bar(explanation, title="Which features matter most")
-```
-
-```python
-bar(
-    shap_values,
-    *,
-    max_display: int = 10,
-    title: str | None = None,
-    subtitle: str | None = None,
-    source: str | None = None,
-    feature_names=None,
-    figsize=None,
-    show_other: bool = False,
-    analysis: bool | str = True,
-    highlight: bool = True,
-    show_values: bool = True,
-    axis_label: str | None = "Average impact on the model's output",
-    transparent: bool = False,
-    ax=None,
-)
-```
-
-- **`shap_values`** - a single-output explanation (slice a class for
-  multiclass). `.data` is optional here.
-- **`show_values`** - print each bar's importance value at its end (default on).
-- **`axis_label`** - plain-language caption under the x-axis; pass `None` to omit.
-- **`max_display` / `show_other` / `analysis` / `highlight` / `transparent` /
-  `title` / `source`** - behave as in `beeswarm`.
-
-### `scatter` - one feature in depth
-
-Where `beeswarm` shows *which* features matter, `scatter` shows *how* one of them
-behaves: each point is a sample, plotting the feature's value against its SHAP
-value. Colour it by a second feature to expose an interaction.
-
-```python
-# defaults to the top feature; name one with feature=..., colour by another
 fig, ax = se.scatter(explanation, feature="worst radius", color="mean texture")
 ```
-
-- **`feature`** - which feature to plot, by name or column index. Defaults to the
-  top driver by mean |SHAP|.
-- **`color`** - optional second feature whose value colours the points, the
-  standard way to reveal an interaction.
-- **`jitter`** - horizontal spread for categorical or integer-coded features that
-  would otherwise stack into vertical stripes; applied automatically for
-  low-cardinality features, pass `0` to disable.
-- **`analysis` / `direction_labels` / `transparent` / `title` / `source`** -
-  behave as in `beeswarm` (the direction labels sit on the y-axis here).
 
 ## Interpreting direction (read this)
 
@@ -386,62 +233,6 @@ state your framing explicitly - it's the clearest guard against this.
 - **Public API is the chart functions.** Everything else is a private module
   (leading underscore) and not guaranteed stable.
 
-## Development
-
-```bash
-uv sync --extra dev
-uv run python -m pytest tests/ -q
-```
-
-### Testing strategy
-
-What this package ships is **rendered pixels**, but almost everything
-convenient to assert on is in-memory state. Those two can disagree, so testing
-is in three layers, each catching what the one above it cannot see.
-
-| Layer | Run | Speed | Catches | Blind to |
-|---|---|---|---|---|
-| 1. Unit | `pytest tests/` | ~5 s | Validation, ordering, aggregation, error types | Anything only visible once rendered |
-| 2. Integration | `examples/*.py` | ~90 s | Breakage against *real* `shap.Explanation` objects and models | Whether the result looks right |
-| 3. Visual regression | `tools/visual_diff.py` | ~3 min | Fonts, layout, spacing, colour, clipping | Correctness of the numbers |
-
-The unit suite (149 tests) uses a lightweight `FakeExplanation` stand-in rather
-than importing the real `shap`, so it stays fast and dependency-light, and runs
-headless via matplotlib's `Agg` backend. It cannot, however, see anything that
-only appears once a figure is rendered - a chart can pass every assertion while
-coming out in the wrong typeface - which is why layers 2 and 3 exist.
-
-See **[docs/TESTING.md](docs/TESTING.md)** for the full strategy: per-layer
-conventions, the visual-regression procedure, what a new chart type needs, and
-the pre-release checklist.
-
-### Before you commit
-
-```bash
-uv run --extra dev python -m pytest tests/ -q
-uv run ruff format --check .
-uv run ruff check .
-```
-
-Before a release, or after touching theming, layout, or figure lifecycle, add
-layers 2 and 3 as described in [docs/TESTING.md](docs/TESTING.md).
-
-### Code style
-
-Formatting and linting use [Ruff](https://docs.astral.sh/ruff/) (config in
-`pyproject.toml`), enforced via a pre-commit hook. Set it up once:
-
-```bash
-uv run pre-commit install     # run Ruff automatically on every commit
-```
-
-Run it manually anytime:
-
-```bash
-uv run ruff format .          # format
-uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it can
-```
-
 ## Roadmap
 
 - [x] `beeswarm()` - global feature-impact summary
@@ -454,12 +245,22 @@ uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it c
 **Out of scope** (by design): real-time model monitoring, drift/bias
 detection, new SHAP computation methods, and regulatory/compliance outputs.
 
+## Development
+
+```bash
+uv sync --extra dev
+uv run python -m pytest tests/ -q
+```
+
+Full setup, Ruff, commit checklist, and the three-layer testing strategy:
+**[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and
+**[docs/TESTING.md](docs/TESTING.md)**.
+
 ## Contributing
 
-New chart types should follow the `beeswarm` pattern: take a
-`shap.Explanation`-shaped object, extract arrays via `_utils.py`, render with
-the shared theme, and finish with `_finalize.finalize()` so every chart looks
-consistent with the others.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)**. New chart types should follow the
+`beeswarm` pattern: extract via `_utils.py`, render with the shared theme, and
+finish with `_finalize.finalize()`.
 
 ## License
 

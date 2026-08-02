@@ -47,10 +47,10 @@ uv run --extra dev python -m pytest tests/ -q
   `pip install -e .[dev]` slow and fragile; keep it in Layer 2 only.
 - **Build inputs with the shared factories**, `make_explanation()` and
   `make_single_explanation()`, rather than hand-rolling arrays per file.
-- **Unit-test private helpers that contain real logic** directly - `_norm`,
-  `_fmt`, each module's `_analysis_line`. Exercising them only through a full
-  chart render means a failure reports "the chart is wrong" instead of naming
-  the broken function.
+- **Unit-test private helpers that contain real logic** directly -
+  `normalize_column`, `_fmt`, each module's `_analysis_line`. Exercising them
+  only through a full chart render means a failure reports "the chart is wrong"
+  instead of naming the broken function.
 - **Assert something that can actually fail.** `assert fig is not None` is
   noise; `plt.subplots()` never returns `None`. Assert on tick labels, artist
   counts, colours, or text content.
@@ -89,11 +89,13 @@ uv run --no-project --python 3.12 --with-editable . \
     python examples/beeswarm_gallery.py
 ```
 
-The six scripts (`<chart>_quickstart.py`, `<chart>_gallery.py`) cover binary
-classification, regression, multiclass with few and with many features, the
-`show_other` toggle, transparent backgrounds, and a second model family. Case
-file names are kept parallel across chart types so the same scenario can be
-compared between them.
+The eight scripts (`<chart>_quickstart.py`, `<chart>_gallery.py` for beeswarm,
+waterfall, bar, and scatter) cover binary classification, regression, multiclass
+with few and with many features, the `show_other` toggle, transparent
+backgrounds, a second model family, and - for scatter - feature selection and
+interaction colouring. Case file names are kept parallel across chart types so
+the same scenario can be compared between them. `beeswarm_comparison.py`
+additionally renders the stock-SHAP-vs-editorial before/after asset.
 
 ---
 
@@ -156,7 +158,7 @@ legitimate, fix the code - do not regenerate to make the diff go away.
 ## Why Layer 3 is not optional: the DejaVu incident
 
 Chart functions were changed to apply the theme inside `mpl.rc_context()` so a
-call would stop mutating the caller's global `rcParams`. All 100 unit tests
+call would stop mutating the caller's global `rcParams`. The entire unit suite
 passed. The examples ran clean. Every rendered PNG silently changed typeface.
 
 A matplotlib `Text` artist copies `font.family` when it is **created**, but if
