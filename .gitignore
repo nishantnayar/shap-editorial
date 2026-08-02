@@ -10,8 +10,9 @@ dist/
 .venv/
 .uv-cache/
 
-# Example output
+# Example output (but keep the README showcase image)
 examples/*.png
+!examples/beeswarm_output.png
 
 # IDE
 .idea/

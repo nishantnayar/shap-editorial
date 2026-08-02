@@ -16,6 +16,12 @@
 
 ---
 
+<p align="center">
+  <img src="examples/beeswarm_output.png" alt="Editorial beeswarm plot of SHAP values" width="720">
+</p>
+
+<p align="center"><em>One <code>beeswarm()</code> call — title, subtitle, source line, and a distinct palette, ready to publish.</em></p>
+
 ## What it is
 
 `shap-editorial` is a thin **styling and layout layer** on top of
