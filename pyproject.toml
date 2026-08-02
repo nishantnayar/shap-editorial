@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shap-editorial"
+version = "0.1.0"
+description = "Publication-ready charts for SHAP explanations — a styling/layout layer over shap.Explanation objects."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Nishant Nayar", email = "nishant.nayar@gmail.com" }]
+keywords = ["shap", "explainability", "visualization", "matplotlib", "charts"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "matplotlib>=3.6",
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+example = ["shap>=0.44", "scikit-learn>=1.2"]
+
+[project.urls]
+Homepage = "https://github.com/nishantnayar/shap-editorial"
+Repository = "https://github.com/nishantnayar/shap-editorial"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shap_editorial"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
