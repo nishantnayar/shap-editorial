@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "shap-editorial"
 version = "0.1.1"
-description = "Publication-ready charts for SHAP explanations — a styling/layout layer over shap.Explanation objects."
+description = "Publication-ready charts for SHAP explanations: a styling/layout layer over shap.Explanation objects."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }

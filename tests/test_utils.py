@@ -6,6 +6,8 @@ from shap_editorial._utils import (
     ShapEditorialError,
     extract_explanation,
     extract_single_explanation,
+    normalize_column,
+    resolve_feature,
     top_feature_order,
 )
 
@@ -177,3 +179,44 @@ def test_top_feature_order_zero_max_display():
     kept, other = top_feature_order(np.array([[1.0, 2.0]]), max_display=0)
     assert len(kept) == 0
     assert len(other) == 2
+
+
+def test_normalize_column_scales_to_unit_range():
+    scaled = normalize_column(np.array([0.0, 5.0, 10.0]))
+    np.testing.assert_allclose(scaled, [0.0, 0.5, 1.0])
+
+
+def test_normalize_column_all_nan_returns_midscale():
+    assert np.all(normalize_column(np.full(5, np.nan)) == 0.5)
+
+
+def test_normalize_column_constant_returns_midscale():
+    assert np.all(normalize_column(np.full(5, 3.0)) == 0.5)
+
+
+def test_resolve_feature_by_name_and_index():
+    names = ["age", "income", "score"]
+    assert resolve_feature(names, "income") == 1
+    assert resolve_feature(names, 2) == 2
+    assert resolve_feature(names, -1) == 2
+
+
+def test_resolve_feature_unknown_name():
+    with pytest.raises(ShapEditorialError, match="No feature named"):
+        resolve_feature(["age", "income"], "salary")
+
+
+def test_resolve_feature_index_out_of_range():
+    with pytest.raises(ShapEditorialError, match="out of range"):
+        resolve_feature(["age", "income"], 5)
+
+
+def test_resolve_feature_duplicate_name():
+    with pytest.raises(ShapEditorialError, match="matches 2 columns"):
+        resolve_feature(["age", "age", "income"], "age")
+
+
+def test_resolve_feature_rejects_bool():
+    # bool is a subclass of int, so True must not silently mean column 1.
+    with pytest.raises(ShapEditorialError, match="No feature named"):
+        resolve_feature(["age", "income"], True)

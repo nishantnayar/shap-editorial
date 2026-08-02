@@ -28,7 +28,7 @@ model.fit(X, y)
 
 explanation = explainer = shap.TreeExplainer(model)(X)
 
-# Explain one malignant case (class 0) — pick the first instance labelled 0.
+# Explain one malignant case (class 0) - pick the first instance labelled 0.
 idx = int((y == 0).to_numpy().argmax())
 single = explanation[..., 0][idx]  # class 0, one instance -> 1-D values + base
 

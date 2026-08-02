@@ -1,5 +1,5 @@
 """End-to-end example: train a real model, compute real SHAP values,
-render an editorial beeswarm plot."""
+render an editorial dependence scatter."""
 
 import sys
 from pathlib import Path
@@ -21,23 +21,26 @@ model.fit(X, y)
 explainer = shap.TreeExplainer(model)
 explanation = explainer(X)
 
-# TreeExplainer on a binary classifier returns shape (n, features, 2).
-# In sklearn's breast cancer dataset the target is coded 0 = malignant,
-# 1 = benign, so we take class 0 to explain the *malignant* prediction -
-# matching the title. (Slicing class 1 would explain P(benign) instead,
-# which flips the direction of every effect and contradicts the title.)
+# Class 0 = malignant in sklearn's coding, so positive SHAP values push the
+# prediction toward malignant - which is what the direction labels below say.
 if explanation.values.ndim == 3:
     explanation = explanation[..., 0]
 
-fig, ax = se.beeswarm(
+# "worst concave points" is the top driver in the beeswarm; this chart shows
+# *how* it acts, with "worst radius" colouring the points to expose their
+# interaction.
+fig, ax = se.scatter(
     explanation,
-    max_display=10,
-    title="What drives the malignancy prediction",
+    feature="worst concave points",
+    color="worst radius",
+    # Kept short: the colour key occupies the top-right, so a title much longer
+    # than this would run into it.
+    title="How “worst concave points” drives malignancy",
     source="Data: sklearn breast cancer dataset · Model: Random Forest (200 trees)",
-    direction_labels=("← toward benign", "toward malignant →"),
+    direction_labels=("↑ toward malignant", "↓ toward benign"),
 )
 
-out_dir = Path(__file__).resolve().parent / "images" / "beeswarm"
+out_dir = Path(__file__).resolve().parent / "images" / "scatter"
 out_dir.mkdir(parents=True, exist_ok=True)
 out_path = out_dir / "hero.png"
 fig.savefig(out_path, dpi=200, bbox_inches="tight")

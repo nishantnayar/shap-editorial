@@ -1,6 +1,6 @@
 """Helpers for pulling plain arrays out of a shap.Explanation object.
 
-We deliberately don't import shap at module load time — this package
+We deliberately don't import shap at module load time - this package
 only needs duck-typed access to `.values`, `.data`, and `.feature_names`,
 so it works against any object shaped like a shap.Explanation without
 forcing a hard dependency at import time.
@@ -63,7 +63,7 @@ def extract_single_explanation(shap_values, feature_names=None):
     """Return (values, data, base_value, names) for a *single* prediction.
 
     The waterfall chart explains one instance, so this expects a 1-D `.values`
-    (n_features,) — or a single-row 2-D array, which is squeezed. It also needs
+    (n_features,) - or a single-row 2-D array, which is squeezed. It also needs
     `.base_values` (E[f(x)]), the starting point the contributions build from.
 
     Raises `ShapEditorialError` (never guesses) for multiclass explanations, for
@@ -108,7 +108,7 @@ def extract_single_explanation(shap_values, feature_names=None):
     base = getattr(shap_values, "base_values", None)
     if base is None:
         raise ShapEditorialError(
-            "waterfall needs `.base_values` (E[f(x)]) — the value the "
+            "waterfall needs `.base_values` (E[f(x)]) - the value the "
             "contributions build from. Pass an Explanation from calling the "
             "explainer on your data, e.g. `explainer(X)[0]`."
         )
@@ -137,6 +137,55 @@ def extract_single_explanation(shap_values, feature_names=None):
         )
 
     return values, data, base, names
+
+
+def normalize_column(col):
+    """Scale one feature's raw values to [0, 1] for the colour map.
+
+    Per-feature (not global) normalization, matching SHAP's own convention.
+    Constant and all-NaN columns collapse to mid-scale rather than producing
+    NaN colours.
+    """
+    col = np.asarray(col, dtype=float)
+    finite = np.isfinite(col)
+    if not finite.any():
+        return np.full_like(col, 0.5)
+    lo, hi = col[finite].min(), col[finite].max()
+    if hi - lo < 1e-12:
+        return np.full_like(col, 0.5)
+    return (col - lo) / (hi - lo)
+
+
+def resolve_feature(names, feature):
+    """Return the column index for a feature given by name or position.
+
+    Accepts a feature name or an integer index (negative indexes from the end).
+    Raises `ShapEditorialError` rather than guessing when the name is absent,
+    the index is out of range, or the name is duplicated.
+    """
+    n = len(names)
+    # bool is a subclass of int, so `feature=True` would silently mean column 1.
+    if isinstance(feature, (int, np.integer)) and not isinstance(feature, bool):
+        idx = int(feature)
+        if not -n <= idx < n:
+            raise ShapEditorialError(
+                f"Feature index {idx} is out of range for {n} features "
+                f"(valid: {-n} to {n - 1})."
+            )
+        return idx % n
+
+    matches = [i for i, name in enumerate(names) if name == feature]
+    if not matches:
+        shown = ", ".join(repr(name) for name in names[:10])
+        if n > 10:
+            shown += f", ... ({n - 10} more)"
+        raise ShapEditorialError(f"No feature named {feature!r}. Available: {shown}.")
+    if len(matches) > 1:
+        raise ShapEditorialError(
+            f"{feature!r} matches {len(matches)} columns ({matches}). "
+            "Pass the column index instead."
+        )
+    return matches[0]
 
 
 def top_feature_order(values: np.ndarray, max_display: int):

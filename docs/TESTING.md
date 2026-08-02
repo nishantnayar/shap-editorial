@@ -19,21 +19,22 @@ and there is a concrete precedent for that, documented at the bottom.
 
 ---
 
-## Layer 1 — Unit tests
+## Layer 1 - Unit tests
 
 ```bash
 uv run --extra dev python -m pytest tests/ -q
 ```
 
-114 tests, no `shap` dependency, no display. Current shape:
+149 tests, no `shap` dependency, no display. Current shape:
 
 | File | Tests | Covers |
 |---|---|---|
-| `tests/test_utils.py` | 22 | `extract_explanation`, `extract_single_explanation`, `top_feature_order` — every validation and error path |
-| `tests/test_theme.py` | 14 | Font resolution, rcParams isolation, transparency; parametrised over all three chart types |
-| `tests/test_beeswarm.py` | 26 | Chart structure, options, `_norm`, `_analysis_line` |
+| `tests/test_utils.py` | 30 | `extract_explanation`, `extract_single_explanation`, `top_feature_order`, `resolve_feature`, `normalize_column` - every validation and error path |
+| `tests/test_theme.py` | 18 | Font resolution, rcParams isolation, transparency; parametrised over all four chart types |
+| `tests/test_beeswarm.py` | 23 | Chart structure, options, `_analysis_line` |
 | `tests/test_waterfall.py` | 30 | Chart structure, options, bar sign colours, endpoint labels, `_fmt` |
 | `tests/test_bar.py` | 22 | Chart structure, options, `_analysis_line` |
+| `tests/test_scatter.py` | 26 | Feature resolution, colour key, jitter, `_analysis_line` |
 
 ### Conventions
 
@@ -46,7 +47,7 @@ uv run --extra dev python -m pytest tests/ -q
   `pip install -e .[dev]` slow and fragile; keep it in Layer 2 only.
 - **Build inputs with the shared factories**, `make_explanation()` and
   `make_single_explanation()`, rather than hand-rolling arrays per file.
-- **Unit-test private helpers that contain real logic** directly — `_norm`,
+- **Unit-test private helpers that contain real logic** directly - `_norm`,
   `_fmt`, each module's `_analysis_line`. Exercising them only through a full
   chart render means a failure reports "the chart is wrong" instead of naming
   the broken function.
@@ -56,7 +57,7 @@ uv run --extra dev python -m pytest tests/ -q
 - **Test the error type, not just the message.** Every user-facing failure
   should be `ShapEditorialError`. Because it subclasses `ValueError`, a test
   written as `pytest.raises(ValueError)` will pass even when the wrong type is
-  raised — which is exactly how one such bug survived in `beeswarm`.
+  raised - which is exactly how one such bug survived in `beeswarm`.
 
 ### What a new chart type needs
 
@@ -69,7 +70,7 @@ fixtures in `tests/test_theme.py`.
 
 ---
 
-## Layer 2 — Integration against real SHAP
+## Layer 2 - Integration against real SHAP
 
 The unit suite deliberately never imports `shap`, so the example scripts are
 the **only** thing verifying that duck-typed extraction still works against
@@ -80,7 +81,7 @@ uv run --extra example python examples/beeswarm_quickstart.py
 ```
 
 If dependency resolution picks an ancient numba that will not build (common on
-newer Pythons), use the isolated env instead — this is the reliable path:
+newer Pythons), use the isolated env instead - this is the reliable path:
 
 ```bash
 uv run --no-project --python 3.12 --with-editable . \
@@ -96,7 +97,7 @@ compared between them.
 
 ---
 
-## Layer 3 — Visual regression
+## Layer 3 - Visual regression
 
 Layers 1 and 2 both pass while the chart renders in the wrong typeface, with
 overlapping labels, or with a clipped colour key. Layer 3 is the only thing
@@ -148,7 +149,7 @@ and max channel delta), or `SIZE`, and exits non-zero if anything changed.
 ### When the diff is legitimate
 
 Commit the regenerated PNGs along with the code change. When it is not
-legitimate, fix the code — do not regenerate to make the diff go away.
+legitimate, fix the code - do not regenerate to make the diff go away.
 
 ---
 
@@ -161,7 +162,7 @@ passed. The examples ran clean. Every rendered PNG silently changed typeface.
 A matplotlib `Text` artist copies `font.family` when it is **created**, but if
 that value is the generic `"sans-serif"` the real face is only resolved against
 `font.sans-serif` when the artist is **drawn**. Drawing happens at
-`fig.savefig(...)` — after the chart function has returned and its rc context
+`fig.savefig(...)` - after the chart function has returned and its rc context
 has exited. So every chart fell back to DejaVu Sans:
 
 ```

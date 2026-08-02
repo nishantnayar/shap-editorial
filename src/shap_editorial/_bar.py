@@ -20,7 +20,7 @@ from ._theme import (
 from ._utils import ShapEditorialError, extract_explanation, top_feature_order
 
 # Bars are shaded by importance on the grey→red scale: the most important
-# feature is red and pops, lower ones recede to grey — matching the beeswarm's
+# feature is red and pops, lower ones recede to grey - matching the beeswarm's
 # "redder = higher" convention instead of a flat wall of red.
 _CMAP = LinearSegmentedColormap.from_list("shap_editorial_bar", [C_LOW, C_MID, C_HIGH])
 
@@ -34,7 +34,7 @@ def _analysis_line(importance, names, kept_idx):
     if len(kept_idx) > 1 and importance[kept_idx[1]] > 0:
         ratio = importance[top] / importance[kept_idx[1]]
         if ratio >= 1.15:
-            msg += f" — about {ratio:.1f}× the next feature's impact"
+            msg += f", about {ratio:.1f}× the next feature's impact"
     return msg + "."
 
 
@@ -70,7 +70,7 @@ def bar(
 ):
     """Render an editorial-style global feature-importance bar chart.
 
-    Each bar is a feature's mean absolute SHAP value across all samples — a
+    Each bar is a feature's mean absolute SHAP value across all samples - a
     single, direction-free measure of how much the feature moves the model's
     output on average. Bars are sorted with the most important feature at top.
 
@@ -78,14 +78,14 @@ def bar(
     ----------
     shap_values : shap.Explanation
         The result of calling a shap Explainer on your data. Must be a
-        single-output (binary/regression) explanation — for multiclass models,
+        single-output (binary/regression) explanation - for multiclass models,
         slice a class first. Unlike `beeswarm`, `.data` is not required.
     max_display : int
         Number of top features (by mean |SHAP|) to show. Must be at least 1.
     show_other : bool
         If True, collapse the remaining features into a single "N other
         features" bar at the bottom (the summed importance of the rest).
-        Defaults to False — just the top `max_display`.
+        Defaults to False - just the top `max_display`.
     analysis : bool | str
         Takeaway line under the title. True (default) names the most important
         feature; pass a string to override, or False to omit.

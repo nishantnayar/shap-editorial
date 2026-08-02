@@ -6,28 +6,22 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import LinearSegmentedColormap
 
 from ._finalize import ROW_HEIGHT_IN, finalize, highlight_row, title_block_height
 from ._theme import (
     C_GRID,
-    C_HIGH,
     C_LABEL_MUTED,
-    C_LOW,
-    C_MID,
     C_OTHER_BAR,
     C_ROW_GUIDE,
     C_ZERO,
+    FEATURE_CMAP,
     set_theme,
 )
-from ._utils import ShapEditorialError, extract_explanation, top_feature_order
-
-# Weighted stops: grey holds through the low half of the scale, and red is
-# reserved for the top ~20% — so only genuinely high feature values pop and
-# everything else recedes to grey.
-_CMAP = LinearSegmentedColormap.from_list(
-    "shap_editorial",
-    [(0.0, C_LOW), (0.5, C_LOW), (0.8, C_MID), (1.0, C_HIGH)],
+from ._utils import (
+    ShapEditorialError,
+    extract_explanation,
+    normalize_column,
+    top_feature_order,
 )
 
 
@@ -35,7 +29,7 @@ def _analysis_line(values, data, names, kept_idx):
     """One-sentence takeaway derived from the top driver's SHAP pattern.
 
     Reports the strongest feature's direction of effect from the correlation
-    between each sample's feature value and its SHAP value — narrating the
+    between each sample's feature value and its SHAP value - narrating the
     colour<->position pattern already in the plot. Returns None rather than
     guess when the feature is flat or degenerate.
     """
@@ -68,23 +62,6 @@ def _row_jitter(n, rng):
     return rng.uniform(-0.35, 0.35, size=n)
 
 
-def _norm(col):
-    """Scale one feature's raw values to [0, 1] for the colour map.
-
-    Per-feature (not global) normalization, matching SHAP's own convention.
-    Constant and all-NaN columns collapse to mid-scale rather than producing
-    NaN colours.
-    """
-    col = col.astype(float)
-    finite = np.isfinite(col)
-    if not finite.any():
-        return np.full_like(col, 0.5)
-    lo, hi = col[finite].min(), col[finite].max()
-    if hi - lo < 1e-12:
-        return np.full_like(col, 0.5)
-    return (col - lo) / (hi - lo)
-
-
 def beeswarm(
     shap_values,
     *,
@@ -108,7 +85,7 @@ def beeswarm(
     shap_values : shap.Explanation
         The result of calling a shap Explainer on your data, e.g.
         `explainer(X_test)`. Must be a single-output (binary/regression)
-        explanation — for multiclass models, slice a class first.
+        explanation - for multiclass models, slice a class first.
     max_display : int
         Number of top features (by mean |SHAP|) to show. Must be at least 1.
     show_other : bool
@@ -117,7 +94,7 @@ def beeswarm(
         SHAP values, preserving the additive property). Defaults to False:
         just show the top `max_display` features. The aggregate row can't
         carry the feature-value colour scale (it sums across features), so
-        it renders in a flat grey — kept as an opt-in for completeness.
+        it renders in a flat grey - kept as an opt-in for completeness.
     analysis : bool | str
         Editorial takeaway line under the title. True (default) auto-generates
         a one-sentence insight from the top driver's SHAP pattern; pass a
@@ -132,7 +109,7 @@ def beeswarm(
         domain-specific wording (e.g. ("← toward benign", "toward malignant →")),
         or False to omit them.
     title, subtitle, source : str | None
-        Editorial title stack. `subtitle` defaults to None — the analysis line
+        Editorial title stack. `subtitle` defaults to None - the analysis line
         and directional axis labels now describe the x-axis, so a "SHAP value"
         subtitle is redundant; pass one explicitly if you want the metric named.
     feature_names : list[str] | None
@@ -143,7 +120,7 @@ def beeswarm(
         charts both look tight); pass an explicit (w, h) to override.
     transparent : bool
         If True, render (and save) with a transparent background instead of
-        white — useful for coloured slides or dark web pages. Save to a format
+        white - useful for coloured slides or dark web pages. Save to a format
         with an alpha channel (PNG, SVG, PDF); JPEG has no transparency and will
         flatten the background. Ignored when drawing onto an existing `ax`.
     ax : matplotlib.axes.Axes | None
@@ -224,7 +201,7 @@ def beeswarm(
         for i, feat_idx in enumerate(kept_idx[::-1]):  # largest impact ends up on top
             y = base + i
             v = values[:, feat_idx]
-            colour_val = _norm(data[:, feat_idx])
+            colour_val = normalize_column(data[:, feat_idx])
             jitter = _row_jitter(n_samples, rng)
             # Draw low-impact points first so the points that matter most sit on
             # top instead of being buried under the dense cluster near zero.
@@ -233,7 +210,7 @@ def beeswarm(
                 v[order],
                 np.full(n_samples, y) + jitter[order],
                 c=colour_val[order],
-                cmap=_CMAP,
+                cmap=FEATURE_CMAP,
                 vmin=0,
                 vmax=1,
                 s=14,
@@ -288,7 +265,7 @@ def beeswarm(
         # Horizontal colour key near the top-right. A horizontal bar with
         # horizontal labels reads better than a vertical colorbar with a rotated
         # axis label (which forces a head-tilt).
-        sm = ScalarMappable(cmap=_CMAP)
+        sm = ScalarMappable(cmap=FEATURE_CMAP)
         sm.set_array([])
         cax = fig.add_axes([0.77, 1.0 - 0.55 / height, 0.18, 0.11 / height])
         cbar = fig.colorbar(sm, cax=cax, orientation="horizontal")

@@ -113,7 +113,7 @@ fig, _ = se.bar(
 )
 save("06_transparent", fig)
 
-# 07. Different model — gradient boosting.
+# 07. Different model - gradient boosting.
 gb = GradientBoostingClassifier(random_state=0).fit(bc.data, bc.target)
 e = shap.TreeExplainer(gb)(bc.data)
 expl = e[..., 0] if e.values.ndim == 3 else e

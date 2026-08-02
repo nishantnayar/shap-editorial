@@ -80,7 +80,7 @@ def waterfall(
     show_other : bool
         If True (default), collapse the remaining features into a single
         "N other features" bar so the bars reconcile from the average
-        prediction to this prediction — the whole point of a waterfall. Set
+        prediction to this prediction - the whole point of a waterfall. Set
         False to show only the top `max_display` features; the bars then stop
         short of "This prediction" (the gap is the hidden contributions).
         Defaults to True here, unlike `beeswarm`, precisely to keep the
@@ -94,7 +94,7 @@ def waterfall(
         If True (default), highlight the largest-contribution row.
     show_values : bool
         If True, append this instance's feature value to each row label
-        ("name = value"). Defaults to False — a raw, unitless feature value
+        ("name = value"). Defaults to False - a raw, unitless feature value
         next to the contribution tends to confuse more than it helps.
     feature_names : list[str] | None
         Overrides names on the explanation object.

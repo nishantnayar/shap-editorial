@@ -4,7 +4,7 @@ import pytest
 from _helpers import FakeExplanation, make_explanation
 
 import shap_editorial as se
-from shap_editorial._beeswarm import _analysis_line, _norm
+from shap_editorial._beeswarm import _analysis_line
 from shap_editorial._utils import ShapEditorialError
 
 
@@ -156,18 +156,6 @@ def test_beeswarm_does_not_leak_rcparams():
     se.beeswarm(make_explanation(), transparent=True)
     assert mpl.rcParams["axes.labelsize"] == before
     assert mpl.rcParams["savefig.transparent"] is False
-
-
-def test_norm_scales_to_unit_range():
-    np.testing.assert_allclose(_norm(np.array([0.0, 5.0, 10.0])), [0.0, 0.5, 1.0])
-
-
-def test_norm_all_nan_column_returns_midscale():
-    assert np.all(_norm(np.full(5, np.nan)) == 0.5)
-
-
-def test_norm_constant_column_returns_midscale():
-    assert np.all(_norm(np.full(5, 3.0)) == 0.5)
 
 
 def test_analysis_line_none_for_flat_feature():

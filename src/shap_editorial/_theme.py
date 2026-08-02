@@ -1,6 +1,6 @@
 """Editorial theme: colours, typography, and layout constants.
 
-The look is modelled on *The Economist*'s data-journalism style — a
+The look is modelled on *The Economist*'s data-journalism style - a
 self-contained styling layer, no dependency on any other charting-theme
 package. It exists to make SHAP output look like something you'd publish,
 not something you'd screenshot apologetically.
@@ -15,11 +15,12 @@ Signature Economist cues implemented here and in `_finalize.py`:
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 # -- Palette -----------------------------------------------------------
 # House colours built on the brand red. The low->high feature-value scale runs
-# from neutral grey up to Economist red (no blue) — see C_LOW/C_MID/C_HIGH.
-C_ECON_RED = "#E3120B"  # the brand red — also the high end of the scale
+# from neutral grey up to Economist red (no blue) - see C_LOW/C_MID/C_HIGH.
+C_ECON_RED = "#E3120B"  # the brand red - also the high end of the scale
 # Grey -> red sequential feature-value scale: "redder = higher value". Low
 # values stay neutral grey and recede; high values pop in Economist red. This
 # separates by both hue and lightness, so it stays colour-blind safe (unlike a
@@ -28,8 +29,17 @@ C_LOW = "#DBDBDB"  # neutral light grey: low feature value (recedes)
 C_MID = "#EA9A8B"  # muted salmon: mid feature value
 C_HIGH = "#E3120B"  # Economist red: high feature value (draws the eye)
 
+# Weighted stops: grey holds through the low half of the scale, and red is
+# reserved for the top ~20% - so only genuinely high feature values pop and
+# everything else recedes to grey. Shared by every chart that colours points by
+# a raw feature value (beeswarm, scatter), so the two stay in step.
+FEATURE_CMAP = LinearSegmentedColormap.from_list(
+    "shap_editorial",
+    [(0.0, C_LOW), (0.5, C_LOW), (0.8, C_MID), (1.0, C_HIGH)],
+)
+
 C_SPINE = "#2B2B2B"
-C_ZERO = "#8C8C8C"  # muted grey zero reference — visible but subordinate to the data
+C_ZERO = "#8C8C8C"  # muted grey zero reference - visible but subordinate to the data
 C_GRID = "#E8E8E8"  # faint value gridlines
 C_ROW_GUIDE = "#F0F0F0"  # fainter still: per-row leader lines
 C_LABEL = "#121317"  # near-black, Economist body text
@@ -74,13 +84,13 @@ def set_theme(*, transparent: bool = False) -> None:
             "ytick.color": C_LABEL,
             "xtick.labelsize": 9,
             "ytick.labelsize": 10,
-            # Economist dot/bar charts let the category labels stand alone —
+            # Economist dot/bar charts let the category labels stand alone -
             # no y-axis tick dashes.
             "ytick.major.size": 0,
             # Name the real faces here rather than the generic "sans-serif".
             # A Text artist copies `font.family` when it is created, but a
             # *generic* name is only resolved against `font.sans-serif` at draw
-            # time — and drawing happens on savefig, after a chart function's
+            # time - and drawing happens on savefig, after a chart function's
             # rc context has already exited. Listing the concrete stack means
             # each artist carries it and renders identically either way.
             "font.family": FONT_STACK,

@@ -97,7 +97,7 @@ def test_waterfall_labels_plain_by_default():
     exp = FakeExplanation(values, data, ["x", "y", "z"], base_values=0.0)
     fig, ax = se.waterfall(exp)
     labels = [t.get_text() for t in ax.get_yticklabels()]
-    # By default labels are just the feature name — no raw "= value".
+    # By default labels are just the feature name - no raw "= value".
     assert all("=" not in lbl for lbl in labels)
 
 

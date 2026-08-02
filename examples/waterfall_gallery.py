@@ -1,8 +1,8 @@
 """Gallery for `waterfall`: single-prediction explanations across datasets.
 
-Exercises the range the chart is built for — binary classification, regression,
+Exercises the range the chart is built for - binary classification, regression,
 multiclass, few vs many features, the show_other toggle, a transparent
-background, and a second model — saving one PNG per case into
+background, and a second model - saving one PNG per case into
 `examples/images/waterfall/`.
 
 File names are kept parallel with the `beeswarm` gallery
@@ -62,7 +62,7 @@ bc = load_breast_cancer(as_frame=True)
 rf = RandomForestClassifier(n_estimators=200, random_state=0).fit(bc.data, bc.target)
 e_bc = shap.TreeExplainer(rf)(bc.data)[..., 0]  # P(malignant)
 
-# 01. Binary classification — a malignant case (contributions push up, red).
+# 01. Binary classification - a malignant case (contributions push up, red).
 fig, _ = se.waterfall(
     e_bc[first_index(bc.target, 0)],
     title="Why this case was predicted malignant",
@@ -70,7 +70,7 @@ fig, _ = se.waterfall(
 )
 save("01_binary_classification", fig)
 
-# 02. Regression — diabetes progression for one patient.
+# 02. Regression - diabetes progression for one patient.
 db = load_diabetes(as_frame=True)
 reg = RandomForestRegressor(n_estimators=200, random_state=0).fit(db.data, db.target)
 e_db = shap.TreeExplainer(reg)(db.data)
@@ -81,7 +81,7 @@ fig, _ = se.waterfall(
 )
 save("02_regression", fig)
 
-# 03. Multiclass, few features — iris (4 features), virginica class.
+# 03. Multiclass, few features - iris (4 features), virginica class.
 ir = load_iris(as_frame=True)
 rf_ir = RandomForestClassifier(n_estimators=200, random_state=0).fit(ir.data, ir.target)
 e_ir = shap.TreeExplainer(rf_ir)(ir.data)[..., 2]
@@ -92,7 +92,7 @@ fig, _ = se.waterfall(
 )
 save("03_multiclass_few_features", fig)
 
-# 04. Multiclass, many features — digits (64 pixels), the digit "8".
+# 04. Multiclass, many features - digits (64 pixels), the digit "8".
 dg = load_digits(as_frame=True)
 rf_dg = RandomForestClassifier(n_estimators=150, random_state=0).fit(dg.data, dg.target)
 e_dg = shap.TreeExplainer(rf_dg)(dg.data.iloc[:200])[..., 8]
@@ -103,7 +103,7 @@ fig, _ = se.waterfall(
 )
 save("04_multiclass_many_features", fig)
 
-# 05. The show_other toggle — top features only (bars stop short; the gap is
+# 05. The show_other toggle - top features only (bars stop short; the gap is
 #     the hidden contributions).
 fig, _ = se.waterfall(
     e_bc[first_index(bc.target, 0)],
@@ -123,7 +123,7 @@ fig, _ = se.waterfall(
 )
 save("06_transparent", fig)
 
-# 07. Different model — gradient boosting (binary, single 2-D output).
+# 07. Different model - gradient boosting (binary, single 2-D output).
 gb = GradientBoostingClassifier(random_state=0).fit(bc.data, bc.target)
 e_gb = shap.TreeExplainer(gb)(bc.data)
 e_gb = e_gb[..., 0] if e_gb.values.ndim == 3 else e_gb

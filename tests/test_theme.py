@@ -11,7 +11,7 @@ def themed_font():
     return findfont(FontProperties(family=FONT_STACK))
 
 
-@pytest.fixture(params=["beeswarm", "waterfall", "bar"])
+@pytest.fixture(params=["beeswarm", "waterfall", "bar", "scatter"])
 def chart(request):
     if request.param == "waterfall":
         return se.waterfall, make_single_explanation()
