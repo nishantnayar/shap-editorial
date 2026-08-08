@@ -1,7 +1,8 @@
 # Examples
 
-Runnable examples for `shap-editorial`. Each trains a real model, computes real
-SHAP values, and renders a chart into [`images/`](images/).
+Runnable examples for [`shap-editorial`](https://pypi.org/project/shap-editorial/).
+Each trains a real model, computes real SHAP values, and renders a chart into
+[`images/`](images/).
 
 Examples are **namespaced by chart type** - scripts are prefixed with the chart
 (`beeswarm_*.py`, `waterfall_*.py`, `bar_*.py`, `scatter_*.py`), and their
@@ -12,9 +13,14 @@ across chart types** (`01_binary_classification`, `02_regression`,
 glance. Slot `05` is each chart's own distinctive option: `05_show_other` for
 beeswarm, waterfall, and bar; `05_low_cardinality` for scatter.
 
+If you only want to *use* the charts, install the package
+(`pip install shap-editorial`) and skip this folder. These scripts are for
+demos, galleries, and the integration test layer.
+
 ## Running
 
-These need the optional `example` dependencies (shap + scikit-learn):
+These need the optional `example` dependencies (shap + scikit-learn), from a
+clone of this repo:
 
 ```bash
 uv run --extra example python examples/beeswarm_quickstart.py
@@ -25,6 +31,7 @@ uv run --extra example python examples/bar_quickstart.py
 uv run --extra example python examples/bar_gallery.py
 uv run --extra example python examples/scatter_quickstart.py
 uv run --extra example python examples/scatter_gallery.py
+uv run --extra example python examples/beeswarm_comparison.py
 ```
 
 On Python 3.13 (where the shap/numba wheels lag), use an isolated 3.12 env:

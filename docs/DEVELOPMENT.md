@@ -56,9 +56,38 @@ uv run ruff format .          # format
 uv run ruff check --fix .     # lint + import-sort (isort), autofixing what it can
 ```
 
+## Releasing
+
+Published on PyPI as [`shap-editorial`](https://pypi.org/project/shap-editorial/).
+Releases are manual for now (no CD).
+
+1. Run the [pre-release checklist](TESTING.md#checklists) (unit + examples +
+   visual when theming/layout changed).
+2. Bump `version` in `pyproject.toml` and `__version__` in
+   `src/shap_editorial/__init__.py` together.
+3. Confirm `README.md` still uses **absolute** image and doc URLs (PyPI cannot
+   resolve relative paths). Showcase images must already be on `main`.
+4. Commit, push `main`, then:
+
+   ```bash
+   Remove-Item -Recurse -Force dist   # PowerShell; or: rm -rf dist
+   uv build
+   uv run --with twine twine check dist/*
+   uv publish
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+5. Smoke-test from a clean env: `pip install shap-editorial==X.Y.Z` and
+   `import shap_editorial as se; print(se.__version__)`.
+
+You cannot re-upload an existing version. Description/README fixes need a new
+patch release.
+
 ## Related docs
 
 - [API reference](API.md)
 - [Testing strategy](TESTING.md)
 - [Examples gallery](../examples/README.md)
 - [Contributing](../CONTRIBUTING.md)
+- [PyPI project](https://pypi.org/project/shap-editorial/)

@@ -201,9 +201,13 @@ uv run ruff check .
 
 **Before a release, or after touching theming, layout, or figure lifecycle**
 
-Everything above, plus Layer 2 (all six example scripts run clean) and Layer 3
-(visual diff reviewed, and regenerated PNGs committed if the change was
-intended).
+Everything above, plus Layer 2 (all example scripts run clean: four quickstarts,
+four galleries, and `beeswarm_comparison.py`) and Layer 3 (visual diff reviewed,
+and regenerated PNGs committed if the change was intended).
+
+Also before uploading to PyPI: version bump in `pyproject.toml` + `__init__.py`,
+`README.md` image/doc links still absolute (see [DEVELOPMENT.md](DEVELOPMENT.md#releasing)),
+`uv build` + `twine check`, then `uv publish` and a git tag.
 
 ## Housekeeping
 

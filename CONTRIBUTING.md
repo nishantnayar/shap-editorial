@@ -5,6 +5,8 @@ styling/layout layer on top of `shap.Explanation` objects - not a new
 interpretability method, and not a SHAP computation library. Keep changes
 inside that remit.
 
+Published package: [`shap-editorial` on PyPI](https://pypi.org/project/shap-editorial/).
+
 ## Getting started
 
 ```bash
@@ -13,8 +15,8 @@ uv run pre-commit install
 uv run python -m pytest tests/ -q
 ```
 
-Day-to-day commands, Ruff, and the three-layer testing strategy live in
-**[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and
+Day-to-day commands, Ruff, release steps, and the three-layer testing strategy
+live in **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and
 **[docs/TESTING.md](docs/TESTING.md)**.
 
 ## Adding a chart type

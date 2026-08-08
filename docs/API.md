@@ -1,5 +1,9 @@
 # API reference
 
+Install: `pip install shap-editorial` ·
+Package: [`shap-editorial` on PyPI](https://pypi.org/project/shap-editorial/) ·
+Source: [GitHub](https://github.com/nishantnayar/shap-editorial)
+
 Public surface: the chart functions, `set_theme()`, and `ShapEditorialError`.
 Everything else is a private module (leading underscore) and not guaranteed
 stable.

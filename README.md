@@ -9,35 +9,38 @@
   <a href="https://github.com/nishantnayar/shap-editorial/actions/workflows/ci.yml">
     <img src="https://github.com/nishantnayar/shap-editorial/actions/workflows/ci.yml/badge.svg" alt="CI status">
   </a>
+  <a href="https://pypi.org/project/shap-editorial/">
+    <img src="https://img.shields.io/pypi/v/shap-editorial" alt="PyPI version">
+  </a>
   <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13-blue" alt="Python 3.12 | 3.13">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/badge/status-alpha-orange" alt="Alpha">
 </p>
 
 <p align="center">
-  <a href="docs/API.md">API</a> ·
-  <a href="examples/">Examples</a> ·
-  <a href="docs/DEVELOPMENT.md">Development</a> ·
-  <a href="docs/TESTING.md">Testing</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/nishantnayar/shap-editorial/blob/main/docs/API.md">API</a> ·
+  <a href="https://github.com/nishantnayar/shap-editorial/tree/main/examples">Examples</a> ·
+  <a href="https://github.com/nishantnayar/shap-editorial/blob/main/docs/DEVELOPMENT.md">Development</a> ·
+  <a href="https://github.com/nishantnayar/shap-editorial/blob/main/docs/TESTING.md">Testing</a> ·
+  <a href="https://github.com/nishantnayar/shap-editorial/blob/main/CONTRIBUTING.md">Contributing</a>
 </p>
 
 ---
 
 <p align="center">
-  <img src="examples/images/beeswarm/hero.png" alt="Editorial beeswarm plot of SHAP values" width="720">
+  <img src="https://raw.githubusercontent.com/nishantnayar/shap-editorial/main/examples/images/beeswarm/hero.png" alt="Editorial beeswarm plot of SHAP values" width="720">
 </p>
 
 <p align="center"><em>One <code>beeswarm()</code> call - <em>The Economist</em>-style title block, an auto-generated takeaway line, a highlighted top driver, directional axis cues, and an explainable grey→red colour scale, ready to publish.</em></p>
 
 <p align="center">
-  <img src="examples/images/waterfall/hero.png" alt="Editorial waterfall plot of a single SHAP prediction" width="720">
+  <img src="https://raw.githubusercontent.com/nishantnayar/shap-editorial/main/examples/images/waterfall/hero.png" alt="Editorial waterfall plot of a single SHAP prediction" width="720">
 </p>
 
 <p align="center"><em>…and one <code>waterfall()</code> call to explain a single prediction - same red tab and grey→red palette, plain-language endpoints (<em>Average prediction → This prediction</em>, no <code>E[f(x)]</code>/<code>f(x)</code> jargon), and an auto takeaway.</em></p>
 
 <p align="center">
-  <img src="examples/images/bar/hero.png" alt="Editorial bar chart of global SHAP feature importance" width="720">
+  <img src="https://raw.githubusercontent.com/nishantnayar/shap-editorial/main/examples/images/bar/hero.png" alt="Editorial bar chart of global SHAP feature importance" width="720">
 </p>
 
 <p align="center"><em>…and one <code>bar()</code> call for a clean importance ranking. Every chart type shares the same look.</em></p>
@@ -77,7 +80,7 @@ The same SHAP output, drawn by SHAP's default plot (left) and by
 `shap-editorial` (right):
 
 <p align="center">
-  <img src="examples/images/beeswarm/comparison.png" alt="Before and after: stock SHAP plot versus shap-editorial" width="900">
+  <img src="https://raw.githubusercontent.com/nishantnayar/shap-editorial/main/examples/images/beeswarm/comparison.png" alt="Before and after: stock SHAP plot versus shap-editorial" width="900">
 </p>
 
 <details>
@@ -165,7 +168,7 @@ uv run --extra example python examples/scatter_quickstart.py     # one feature's
 uv run --extra example python examples/beeswarm_comparison.py    # side-by-side before/after vs stock SHAP
 ```
 
-See [`examples/`](examples/) for the full gallery and how to run it.
+See [`examples/`](https://github.com/nishantnayar/shap-editorial/tree/main/examples) for the full gallery and how to run it.
 
 ## API
 
@@ -179,7 +182,7 @@ See [`examples/`](examples/) for the full gallery and how to run it.
 | `ShapEditorialError` | Raised when the input isn't a usable SHAP explanation. |
 
 Signatures, parameters, and chart-specific notes:
-**[docs/API.md](docs/API.md)**.
+**[docs/API.md](https://github.com/nishantnayar/shap-editorial/blob/main/docs/API.md)**.
 
 ```python
 fig, ax = se.waterfall(expl[..., 0][0], title="Why this case was predicted malignant")
@@ -242,7 +245,7 @@ state your framing explicitly - it's the clearest guard against this.
 - [x] `waterfall()` - single-prediction explanation
 - [x] `bar()` - global feature-importance bar chart
 - [x] `scatter()` - single-feature dependence plot
-- [x] First PyPI release (`v0.1.0`)
+- [x] First PyPI release (`v0.1.0`; current: `v0.1.1`)
 
 **Out of scope** (by design): real-time model monitoring, drift/bias
 detection, new SHAP computation methods, and regulatory/compliance outputs.
@@ -255,15 +258,15 @@ uv run python -m pytest tests/ -q
 ```
 
 Full setup, Ruff, commit checklist, and the three-layer testing strategy:
-**[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and
-**[docs/TESTING.md](docs/TESTING.md)**.
+**[docs/DEVELOPMENT.md](https://github.com/nishantnayar/shap-editorial/blob/main/docs/DEVELOPMENT.md)** and
+**[docs/TESTING.md](https://github.com/nishantnayar/shap-editorial/blob/main/docs/TESTING.md)**.
 
 ## Contributing
 
-See **[CONTRIBUTING.md](CONTRIBUTING.md)**. New chart types should follow the
+See **[CONTRIBUTING.md](https://github.com/nishantnayar/shap-editorial/blob/main/CONTRIBUTING.md)**. New chart types should follow the
 `beeswarm` pattern: extract via `_utils.py`, render with the shared theme, and
 finish with `_finalize.finalize()`.
 
 ## License
 
-[MIT](LICENSE) © 2026 Nishant Nayar
+[MIT](https://github.com/nishantnayar/shap-editorial/blob/main/LICENSE) © 2026 Nishant Nayar
