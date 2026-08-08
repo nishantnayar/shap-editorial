@@ -98,24 +98,26 @@ The same SHAP output, drawn by SHAP's default plot (left) and by
 
 ## Install
 
-Not yet on PyPI - install from source. Using [uv](https://docs.astral.sh/uv/)
-(recommended):
-
 ```bash
-git clone https://github.com/nishantnayar/shap-editorial.git
-cd shap-editorial
-uv sync --extra dev
+pip install shap-editorial
 ```
 
-Or with pip:
+Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install -e ".[dev]"          # core + test tooling
-pip install -e ".[example]"      # adds shap + scikit-learn for the demo script
+uv add shap-editorial
 ```
 
 **Runtime dependencies are only `matplotlib` and `numpy`.** `shap` itself is
 *not* required to use this package - input is duck-typed (see below).
+
+For local development from a clone:
+
+```bash
+uv sync --extra dev              # core + test tooling
+uv sync --extra example          # adds shap + scikit-learn for the demos
+# or: pip install -e ".[dev,example]"
+```
 
 ## Quickstart
 
@@ -240,7 +242,7 @@ state your framing explicitly - it's the clearest guard against this.
 - [x] `waterfall()` - single-prediction explanation
 - [x] `bar()` - global feature-importance bar chart
 - [x] `scatter()` - single-feature dependence plot
-- [ ] First PyPI release (`v0.1`)
+- [x] First PyPI release (`v0.1.0`)
 
 **Out of scope** (by design): real-time model monitoring, drift/bias
 detection, new SHAP computation methods, and regulatory/compliance outputs.

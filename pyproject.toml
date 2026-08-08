@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shap-editorial"
-version = "0.1.1"
+version = "0.1.0"
 description = "Publication-ready charts for SHAP explanations: a styling/layout layer over shap.Explanation objects."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -31,6 +31,7 @@ example = ["shap>=0.44", "scikit-learn>=1.2"]
 [project.urls]
 Homepage = "https://github.com/nishantnayar/shap-editorial"
 Repository = "https://github.com/nishantnayar/shap-editorial"
+Issues = "https://github.com/nishantnayar/shap-editorial/issues"
 
 [tool.hatch.build]
 exclude = [
@@ -44,7 +45,7 @@ exclude = [
     ".ruff_cache/",
     ".pytest_cache/",
     "uv.lock",
-    "TESTING.md",
+    "docs/TESTING.md",
     "REVIEW.md",
     "CLAUDE.md",
 ]
