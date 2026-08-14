@@ -7,7 +7,7 @@ from ._theme import set_theme
 from ._utils import ShapEditorialError
 from ._waterfall import waterfall
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = [
     "beeswarm",
     "waterfall",

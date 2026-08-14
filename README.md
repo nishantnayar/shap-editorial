@@ -12,7 +12,7 @@
   <a href="https://pypi.org/project/shap-editorial/">
     <img src="https://img.shields.io/pypi/v/shap-editorial" alt="PyPI version">
   </a>
-  <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13-blue" alt="Python 3.12 | 3.13">
+  <img src="https://img.shields.io/badge/python-3.10--3.13-blue" alt="Python 3.10 to 3.13">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/badge/status-alpha-orange" alt="Alpha">
 </p>
